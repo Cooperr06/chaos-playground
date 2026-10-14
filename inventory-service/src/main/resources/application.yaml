@@ -1,3 +1,15 @@
 spring:
   application:
     name: inventory-service
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: 8081
+
+inventory:
+  initial-stock:
+    watch-1: 1_000_000
+    watch-2: 1_000_000
+    strap-1: 50

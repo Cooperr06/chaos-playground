@@ -1,6 +1,9 @@
 spring:
   application:
     name: payment-service
+  mvc:
+    problemdetails:
+      enabled: true
 
 server:
   port: 8082
