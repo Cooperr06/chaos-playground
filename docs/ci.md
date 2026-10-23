@@ -27,6 +27,23 @@ Workflow-Artifacts sind Dateien, die an einem einzelnen Lauf hängen und nach ei
 6. Layer-Cache über den GitHub-Actions-Cache (`cache-from` und `cache-to` mit `type=gha`, `mode=max`), mit einem eigenen `scope` pro Modul. Ohne `scope` überschreibt jedes Image den Cache des vorherigen (Docker-Doku, "GitHub Actions cache"). Ein Modul, dessen Quellcode sich nicht geändert hat, kommt komplett aus dem Cache. Den Maven-Cache-Mount aus dem Dockerfile deckt das nicht ab.
 7. Sichtbarkeit der Pakete prüfen: Neue Pakete sind auf GitHub oft zuerst privat. Für den Pi entweder öffentlich stellen oder dort anmelden.
 
+## Stufe 3: Smoke-Test mit Docker Compose
+
+Prüft, dass die Dienste im Container zusammenarbeiten, so wie bisher von Hand mit den `curl`-Aufrufen aus `docs/docker-compose.md`.
+
+1. Ein dritter Job `smoke-test` in `.github/workflows/ci.yml`, mit `needs: build`, bei Push und Pull Request auf `main`. Er hängt nicht an `images`, weil `docker compose up --build` die Images selbst baut und so auch Pull Requests geprüft werden.
+2. Runner `ubuntu-24.04-arm`, damit dieselbe Architektur getestet wird wie auf dem Pi und dem Mac.
+3. Schritte: auschecken, `docker compose up --build -d`, auf die Dienste warten, Anfragen schicken, am Ende `docker compose down`.
+4. Warten ohne Healthcheck: Der Shop soll erst angefragt werden, wenn er antwortet. Zwei Wege zur Auswahl, bitte recherchieren und einen wählen:
+   - `curl` mit Wiederholung (`--retry`, `--retry-connrefused`, `--retry-delay`). In der `curl`-Doku (`man curl`) nachsehen, bei welchen Fehlern und Statuscodes `--retry` überhaupt wiederholt, auch bei `POST`.
+   - Eine kleine Schleife in der Shell, die einen `GET` auf `/actuator/health` wiederholt, bis `200` kommt (der Endpunkt ist in den Diensten vorhanden, das Log sagt "Exposing 1 endpoint beneath base path '/actuator'", ob es `health` ist, bitte prüfen).
+5. Geprüft wird nur das, was schnell und eindeutig ist:
+   - Bestellung für `watch-1`: `201`.
+   - Bestellung für ein unbekanntes Produkt: `404`.
+   - Den Fall "Zahlung gestoppt" nicht automatisieren, die erste Anfrage hängt (kein Timeout im Shop) und würde den Job blockieren, bis das Thema in Szenario 1 gelöst ist.
+6. Der Job schlägt fehl, wenn ein Statuscode nicht passt (`curl --fail` oder ein Vergleich in der Shell). Bei einem Fehler soll `docker compose logs` im Log erscheinen (Schritt mit `if: failure()`), sonst ist die Ursache nicht zu sehen.
+7. `docker compose down` läuft auch bei Fehlern (`if: always()`), sonst bleiben Container auf dem Runner. Auf einem frischen GitHub-Runner ist das nur Ordnung, kein Muss.
+
 ## Vorgaben
 
 - Keine Secrets im Workflow. Das `GITHUB_TOKEN` stellt GitHub automatisch bereit.
@@ -37,9 +54,11 @@ Workflow-Artifacts sind Dateien, die an einem einzelnen Lauf hängen und nach ei
 
 - Stufe 1: Ein Push auf `main` startet den Workflow, er ist grün, unter "Actions" sind die Testergebnisse im Log sichtbar. Ein absichtlich kaputter Test (lokal, nicht committen oder in einem PR) macht ihn rot.
 - Stufe 2: Nach einem Push auf `main` liegen die drei Images unter "Packages", `docker pull ghcr.io/cooperr06/payment-service:latest` funktioniert auf dem Mac (arm64), und der Container startet.
+- Stufe 3: Der Job `smoke-test` ist bei Push und Pull Request grün. Stellt man die Variable `SHOP_PAYMENTURL` in der Compose-Datei absichtlich auf eine falsche Adresse (lokal ausprobieren, nicht committen), wird der Job rot, weil die Bestellung nicht mehr `201` liefert. Bei Rot steht `docker compose logs` im Job-Log.
 
 ## Nicht Teil dieser Aufgabe
 
+- Healthchecks in der Compose-Datei, Tests für den Ausfall einzelner Dienste
 - Deployment auf den Pi (CD)
 - Pipelines auf dem zweiten Remote
 - Code-Analyse, Abhängigkeits-Updates (z. B. Dependabot), Releases
