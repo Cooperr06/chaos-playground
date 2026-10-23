@@ -1,10 +1,10 @@
-package de.cooperr.chaos.loadgenerator;
+package de.cooperr.chaos.inventory;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class LoadGeneratorApplicationTests {
+class InventoryServiceApplicationTest {
 
     @Test
     void contextLoads() {

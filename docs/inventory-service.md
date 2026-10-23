@@ -35,13 +35,13 @@ Verwaltet den Lagerbestand. Der Shop fragt hier die Verfügbarkeit ab und reserv
 
 ## Tests (Akzeptanzkriterien)
 
-- `InventoryServiceTests`: reiner Unit-Test ohne Spring, Service mit `new` und Testbestand erzeugen.
+- `InventoryServiceTest`: reiner Unit-Test ohne Spring, Service mit `new` und Testbestand erzeugen.
   - Bestand abfragen
   - Reservieren verringert den Bestand
   - Zu viel reservieren wirft eine Exception, der Bestand bleibt gleich
   - Unbekanntes Produkt wirft eine Exception
   - Nebenläufigkeit: Bei Bestand 50 reservieren 100 Threads gleichzeitig je 1 Stück. Danach haben genau 50 Reservierungen geklappt und der Bestand ist 0. Tipp: `ExecutorService` und `CountDownLatch`.
-- `InventoryControllerTests`: `@WebMvcTest`, Service gemockt mit `@MockitoBean` (`org.springframework.test.context.bean.override.mockito`; `@MockBean` gibt es in Boot 4 nicht mehr).
+- `InventoryControllerTest`: `@WebMvcTest`, Service gemockt mit `@MockitoBean` (`org.springframework.test.context.bean.override.mockito`; `@MockBean` gibt es in Boot 4 nicht mehr).
   - `GET` auf bekanntes Produkt: `200` mit `available`
   - `GET` auf unbekanntes Produkt: `404`
   - Reservierung klappt: `201`

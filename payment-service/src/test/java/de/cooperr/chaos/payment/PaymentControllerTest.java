@@ -11,7 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PaymentController.class)
-class PaymentControllerTests {
+class PaymentControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

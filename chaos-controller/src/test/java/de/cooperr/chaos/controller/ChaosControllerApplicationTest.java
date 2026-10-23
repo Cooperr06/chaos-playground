@@ -1,10 +1,10 @@
-package de.cooperr.chaos.payment;
+package de.cooperr.chaos.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class PaymentServiceApplicationTests {
+class ChaosControllerApplicationTest {
 
     @Test
     void contextLoads() {
