@@ -1,3 +1,13 @@
 spring:
   application:
     name: shop-service
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: 8080
+
+shop:
+  inventory-url: http://localhost:8081
+  payment-url: http://localhost:8082
