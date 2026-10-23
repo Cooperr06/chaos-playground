@@ -23,13 +23,13 @@ Bringt `shop-service`, `inventory-service` und `payment-service` mit einem Befeh
 - Keine Secrets oder Zugangsdaten in Dockerfile oder Compose-Datei.
 - Image-Größe und Build-Zeit im Blick behalten (Maven-Cache nutzen, z. B. eine Cache-Mount in der Build-Stufe). Kein Anspruch auf Perfektion.
 - Kein Healthcheck im ersten Schritt. Ein Healthcheck über `/actuator/health` braucht ein Tool im Image (`curl` oder `wget`), das ein JRE-Image oft nicht mitbringt. Erst entscheiden, wenn der Chaos-Controller Container neu startet.
-- Namen der Container und Dienste so wählen, dass der Chaos-Controller sie später über die Docker-API eindeutig findet (Dienstname gleich Modulname, Projektname fest).
+- Namen der Container und Dienste so wählen, dass der Chaos-Controller sie später über die Docker-API eindeutig findet (Dienstname gleich Modulname, Projektname fest). Die Container heißen `chaos-playground-<kurzname>` (`chaos-playground-shop`, `-inventory`, `-payment`), `container_name` ist in der Compose-Datei gesetzt. Die Dienste erreichen sich weiter über den Dienstnamen, nicht über den Container-Namen.
 
 ## Akzeptanzkriterien
 
 - `docker compose up --build` baut alle drei Images und startet die Container ohne Fehler.
 - Die `curl`-Tests aus `docs/shop-service.md` (Bestellung klappt, `409`, `404`) laufen gegen `localhost:8080` und liefern dieselben Antworten wie ohne Docker.
-- `docker compose stop payment-service` gefolgt von einer Bestellung liefert `502` vom Shop, `docker compose start payment-service` macht es wieder gut.
+- `docker compose stop payment-service` gefolgt von einer Bestellung liefert `502` vom Shop, `docker compose start payment-service` macht es wieder gut. Die erste Anfrage direkt nach dem Stopp kann hängen, weil der Shop keine Timeouts hat (Thema von Szenario 1). Spätere Anfragen liefern `502`.
 - `mvn verify` ist weiter grün, am Java-Code hat sich nichts geändert.
 
 ## Manuell prüfen

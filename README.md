@@ -54,10 +54,19 @@ Chaos entsteht über zwei Wege: Ausfall per Docker-API (Container stoppen oder p
 - Nginx Proxy Manager für `chaosplayground.cooperr.de` auf dem Raspberry Pi
 - GitHub Actions für die CI-Pipeline
 
+## Starten
+
+```
+docker compose up --build
+docker compose down
+```
+
+Shop, Lager und Zahlung laufen dann auf `127.0.0.1:8080`, `8081` und `8082`. Mit `-d` startet alles im Hintergrund.
+
 ## Plan
 
-- **Fertig:** `payment-service`, `inventory-service` und `shop-service` (ohne Resilienz) mit Tests.
-- **Als Nächstes:** Shop, Lager und Zahlung lauffähig mit Docker Compose, Chaos-Endpunkt, Lastgenerator, Szenario 1 mit Circuit Breaker.
+- **Fertig:** `payment-service`, `inventory-service` und `shop-service` (ohne Resilienz) mit Tests, Dockerfiles, CI-Pipeline mit Images auf `ghcr.io`.
+- **Als Nächstes:** Docker Compose abnehmen, Chaos-Endpunkt, Lastgenerator, Szenario 1 mit Circuit Breaker.
 - **Danach:** Chaos-Controller mit Weboberfläche, Live-Dashboard, Szenarien 2 bis 4.
 - **Zugang:** Das Dashboard bekommt zwei Logins, `viewer` (nur ansehen) und `admin` (zusätzlich Chaos-Knöpfe), damit Gäste die Demo selbst ausprobieren können.
 
