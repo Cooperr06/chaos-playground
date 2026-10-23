@@ -1,8 +1,8 @@
 package de.cooperr.chaos.inventory;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class InventoryController {
@@ -17,5 +17,11 @@ public class InventoryController {
     public InventoryResponse getStock(@PathVariable String productId) {
         int stock = inventoryService.getStock(productId);
         return new InventoryResponse(productId, stock);
+    }
+
+    @PostMapping("/inventory/{productId}/reservations")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Reservation reserve(@PathVariable String productId, @Valid @RequestBody ReservationRequest reservation) {
+        return inventoryService.reserve(productId, reservation.quantity());
     }
 }
