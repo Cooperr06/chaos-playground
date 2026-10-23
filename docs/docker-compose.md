@@ -5,7 +5,7 @@ Bringt `shop-service`, `inventory-service` und `payment-service` mit einem Befeh
 ## Features
 
 1. Je ein `Dockerfile` pro Modul (`shop-service/Dockerfile`, `inventory-service/Dockerfile`, `payment-service/Dockerfile`), später auch für `chaos-controller` und `load-generator`. Der Build-Kontext ist trotzdem das Repo-Root (`context: .` und `dockerfile: <modul>/Dockerfile` in der Compose-Datei), weil jedes Modul die Root-`pom.xml` als Parent braucht. Mehrstufig:
-   - Build-Stufe: Maven und JDK 25, baut nur das eigene Modul mit seinen Abhängigkeiten (`-pl <modul> -am`), Tests laufen hier nicht (`-DskipTests`), die laufen bei `mvn verify`. Es werden nur Root-`pom.xml`, die Modul-`pom.xml` und `src` des Moduls kopiert.
+   - Build-Stufe: Maven und JDK 25, baut nur das eigene Modul mit seinen Abhängigkeiten (`-pl <modul> -am`), Tests werden hier weder kompiliert noch ausgeführt (`-Dmaven.test.skip=true`), die laufen bei `mvn verify`. Es werden nur Root-`pom.xml`, die Modul-`pom.xml` und `src` des Moduls kopiert.
    - Laufzeit-Stufe: JRE 25, nur das fertige Spring-Boot-JAR, ein Nicht-Root-Benutzer.
    - Das Basis-Image muss für `arm64` (und gern `amd64`) veröffentlicht sein. Gewählt: `maven:3.9-eclipse-temurin-25` für den Build und `eclipse-temurin:25-jre-alpine` für die Laufzeit (nur JRE, `linux/arm64/v8`, etwa 71 MB komprimiert). Alpine bringt `adduser` mit, damit lässt sich ein eigener Benutzer anlegen.
 2. `.dockerignore` im Root (`target/`, `.git/`, `.idea/`, `docs/` und Ähnliches), damit der Build-Kontext klein bleibt.
