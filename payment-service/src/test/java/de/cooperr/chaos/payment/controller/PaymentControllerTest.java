@@ -1,4 +1,4 @@
-package de.cooperr.chaos.payment;
+package de.cooperr.chaos.payment.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +21,10 @@ class PaymentControllerTest {
     @Test
     void pay_validRequest_returnsCreatedPayment() throws Exception {
         String orderId = "o-1";
-        BigDecimal amount = new BigDecimal("49.90");
+        BigDecimal totalAmount = new BigDecimal("49.90");
         String requestBody = """
-                {"orderId": "%s", "amount": %s}
-                """.formatted(orderId, amount);
+                {"orderId": "%s", "totalAmount": %s}
+                """.formatted(orderId, totalAmount);
 
         mockMvc.perform(post("/payments")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -38,10 +38,10 @@ class PaymentControllerTest {
     @Test
     void pay_zeroAmount_returnsBadRequest() throws Exception {
         String orderId = "o-1";
-        BigDecimal amount = BigDecimal.ZERO;
+        BigDecimal totalAmount = BigDecimal.ZERO;
         String requestBody = """
-                {"orderId": "%s", "amount": %s}
-                """.formatted(orderId, amount);
+                {"orderId": "%s", "totalAmount": %s}
+                """.formatted(orderId, totalAmount);
 
         mockMvc.perform(post("/payments")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -52,10 +52,10 @@ class PaymentControllerTest {
     @Test
     void pay_negativeAmount_returnsBadRequest() throws Exception {
         String orderId = "o-1";
-        BigDecimal amount = new BigDecimal("-5");
+        BigDecimal totalAmount = new BigDecimal("-5");
         String requestBody = """
-                {"orderId": "%s", "amount": %s}
-                """.formatted(orderId, amount);
+                {"orderId": "%s", "totalAmount": %s}
+                """.formatted(orderId, totalAmount);
 
         mockMvc.perform(post("/payments")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -65,10 +65,10 @@ class PaymentControllerTest {
 
     @Test
     void pay_missingOrderId_returnsBadRequest() throws Exception {
-        BigDecimal amount = new BigDecimal("49.90");
+        BigDecimal totalAmount = new BigDecimal("49.90");
         String requestBody = """
-                {"amount": %s}
-                """.formatted(amount);
+                {"totalAmount": %s}
+                """.formatted(totalAmount);
 
         mockMvc.perform(post("/payments")
                         .contentType(MediaType.APPLICATION_JSON)

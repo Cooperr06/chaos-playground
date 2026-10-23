@@ -1,4 +1,4 @@
-package de.cooperr.chaos.payment;
+package de.cooperr.chaos.payment.dto;
 
 import java.util.UUID;
 

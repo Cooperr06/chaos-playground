@@ -1,4 +1,4 @@
-package de.cooperr.chaos.payment;
+package de.cooperr.chaos.payment.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -8,5 +8,5 @@ import java.math.BigDecimal;
 
 public record PaymentRequest(
         @NotBlank String orderId,
-        @NotNull @Positive BigDecimal amount) {
+        @NotNull @Positive BigDecimal totalAmount) {
 }
