@@ -25,3 +25,36 @@ jobs:
 
       - name: Build and test
         run: ./mvnw -B verify
+
+  images:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        module: [shop-service, inventory-service, payment-service]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.module }}/Dockerfile
+          platforms: linux/arm64
+          cache-from: type=gha,scope=${{ matrix.module }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.module }}
+          push: true
+          tags: |
+            ghcr.io/cooperr06/${{ matrix.module }}:latest
+            ghcr.io/cooperr06/${{ matrix.module }}:${{ github.sha }}

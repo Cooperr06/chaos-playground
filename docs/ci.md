@@ -17,16 +17,15 @@ Workflow-Artifacts sind Dateien, die an einem einzelnen Lauf hängen und nach ei
 4. Rechte des `GITHUB_TOKEN` auf das Nötigste beschränken (`permissions: contents: read`).
 5. Versionen der Actions auf deren GitHub-Seite nachsehen (aktuelles Major-Tag), nicht aus dem Gedächtnis nehmen.
 
-## Stufe 2: Docker-Images (nach der Docker-Compose-Aufgabe)
+## Stufe 2: Docker-Images
 
-1. Ein zweiter Job, der nach dem Build-Job läuft (`needs`), nur bei Push auf `main`, nicht bei Pull Requests.
+1. Ein zweiter Job `images`, der nach dem Build-Job läuft (`needs`), nur bei Push auf `main`, nicht bei Pull Requests.
 2. Pro Dienst ein Image (`shop-service`, `inventory-service`, `payment-service`), gebaut mit Kontext `.` und `<modul>/Dockerfile`, wie in der Compose-Datei. Eine Matrix über die Module hält das kurz.
-3. Plattformen `linux/arm64` (Mac, Pi) und gern `linux/amd64`. Zwei Wege, bitte in der Doku nachsehen und einen wählen:
-   - Docker Buildx mit QEMU-Emulation auf dem normalen Runner (langsamer, ein Job).
-   - Ein arm64-Runner von GitHub, falls für öffentliche Repos verfügbar.
+3. Nur Plattform `linux/arm64` (Mac und Pi sind beide arm64). Gebaut wird nativ auf dem GitHub-Runner `ubuntu-24.04-arm`, ohne QEMU-Emulation. Laut GitHub-Doku ("Standard GitHub-hosted runners for public repositories") sind diese Runner für öffentliche Repos kostenlos. Das Repo muss dafür öffentlich sein. Ein `amd64`-Image gibt es bewusst nicht, es bräuchte einen zweiten Build.
 4. Anmelden an `ghcr.io` mit dem `GITHUB_TOKEN`, dafür braucht der Job `packages: write`. Kein persönliches Token.
 5. Image-Namen `ghcr.io/cooperr06/<modul>` (Registry-Namen sind kleingeschrieben), Tags `latest` und der Commit-SHA.
-6. Sichtbarkeit der Pakete prüfen: Neue Pakete sind auf GitHub oft zuerst privat. Für den Pi entweder öffentlich stellen oder dort anmelden.
+6. Layer-Cache über den GitHub-Actions-Cache (`cache-from` und `cache-to` mit `type=gha`, `mode=max`), mit einem eigenen `scope` pro Modul. Ohne `scope` überschreibt jedes Image den Cache des vorherigen (Docker-Doku, "GitHub Actions cache"). Ein Modul, dessen Quellcode sich nicht geändert hat, kommt komplett aus dem Cache. Den Maven-Cache-Mount aus dem Dockerfile deckt das nicht ab.
+7. Sichtbarkeit der Pakete prüfen: Neue Pakete sind auf GitHub oft zuerst privat. Für den Pi entweder öffentlich stellen oder dort anmelden.
 
 ## Vorgaben
 
