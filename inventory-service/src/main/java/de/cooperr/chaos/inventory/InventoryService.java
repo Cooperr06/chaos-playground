@@ -1,13 +1,17 @@
 package de.cooperr.chaos.inventory;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class InventoryService {
 
+    private static final Logger log = LoggerFactory.getLogger(InventoryService.class);
     private final ConcurrentMap<String, Integer> stock;
 
     public InventoryService(InventoryProperties inventory) {
@@ -15,10 +19,32 @@ public class InventoryService {
     }
 
     public int getStock(String productId) {
-        Integer stock = this.stock.get(productId);
-        if (stock == null) {
+        Integer productStock = stock.get(productId);
+        if (productStock == null) {
             throw new ProductNotFoundException(productId);
         }
-        return stock;
+        return productStock;
+    }
+
+    public Reservation reserve(String productId, int quantity) {
+        if (quantity < 1) {
+            throw new IllegalArgumentException("quantity must be positive");
+        }
+
+        int remaining = stock.compute(productId, (_, v) -> {
+            if (v == null) {
+                throw new ProductNotFoundException(productId);
+            }
+
+            if (v >= quantity) {
+                return v - quantity;
+            } else {
+                throw new InsufficientStockException(productId, quantity, v);
+            }
+        });
+
+        Reservation reservation = new Reservation(UUID.randomUUID(), productId, quantity);
+        log.info("Reserved productId={} quantity={} remaining={}", productId, quantity, remaining);
+        return reservation;
     }
 }
