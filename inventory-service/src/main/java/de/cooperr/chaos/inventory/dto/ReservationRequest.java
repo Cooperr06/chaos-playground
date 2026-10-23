@@ -1,4 +1,4 @@
-package de.cooperr.chaos.inventory;
+package de.cooperr.chaos.inventory.dto;
 
 import jakarta.validation.constraints.Positive;
 

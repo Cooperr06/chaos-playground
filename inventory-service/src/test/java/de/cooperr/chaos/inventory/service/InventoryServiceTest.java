@@ -1,5 +1,9 @@
-package de.cooperr.chaos.inventory;
+package de.cooperr.chaos.inventory.service;
 
+import de.cooperr.chaos.inventory.config.InventoryProperties;
+import de.cooperr.chaos.inventory.dto.Reservation;
+import de.cooperr.chaos.inventory.exception.InsufficientStockException;
+import de.cooperr.chaos.inventory.exception.ProductNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;

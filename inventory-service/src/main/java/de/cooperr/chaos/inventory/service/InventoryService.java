@@ -1,5 +1,9 @@
-package de.cooperr.chaos.inventory;
+package de.cooperr.chaos.inventory.service;
 
+import de.cooperr.chaos.inventory.config.InventoryProperties;
+import de.cooperr.chaos.inventory.dto.Reservation;
+import de.cooperr.chaos.inventory.exception.InsufficientStockException;
+import de.cooperr.chaos.inventory.exception.ProductNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

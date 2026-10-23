@@ -1,4 +1,4 @@
-package de.cooperr.chaos.inventory;
+package de.cooperr.chaos.inventory.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.ErrorResponseException;

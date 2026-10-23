@@ -1,4 +1,4 @@
-package de.cooperr.chaos.inventory;
+package de.cooperr.chaos.inventory.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

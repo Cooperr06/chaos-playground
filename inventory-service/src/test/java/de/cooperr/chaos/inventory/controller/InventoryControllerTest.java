@@ -1,5 +1,9 @@
-package de.cooperr.chaos.inventory;
+package de.cooperr.chaos.inventory.controller;
 
+import de.cooperr.chaos.inventory.dto.Reservation;
+import de.cooperr.chaos.inventory.exception.InsufficientStockException;
+import de.cooperr.chaos.inventory.exception.ProductNotFoundException;
+import de.cooperr.chaos.inventory.service.InventoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
