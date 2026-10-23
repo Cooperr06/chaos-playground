@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="LoadGeneratorApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+    <module name="load-generator" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="de.cooperr.chaos.loadgenerator.LoadGeneratorApplication" />
+    <option name="VM_PARAMETERS" value="-Djava.rmi.server.hostname=localhost" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
