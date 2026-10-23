@@ -6,6 +6,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,45 +19,60 @@ class PaymentControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void approvesValidPayment() throws Exception {
+    void pay_validRequest_returnsCreatedPayment() throws Exception {
+        String orderId = "o-1";
+        BigDecimal amount = new BigDecimal("49.90");
+        String requestBody = """
+                {"orderId": "%s", "amount": %s}
+                """.formatted(orderId, amount);
+
         mockMvc.perform(post("/payments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"orderId": "o-1", "amount": 49.90}
-                                """))
+                        .content(requestBody))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("APPROVED"))
-                .andExpect(jsonPath("$.orderId").value("o-1"))
+                .andExpect(jsonPath("$.orderId").value(orderId))
                 .andExpect(jsonPath("$.paymentId").isNotEmpty());
     }
 
     @Test
-    void rejectsZeroAmount() throws Exception {
+    void pay_zeroAmount_returnsBadRequest() throws Exception {
+        String orderId = "o-1";
+        BigDecimal amount = BigDecimal.ZERO;
+        String requestBody = """
+                {"orderId": "%s", "amount": %s}
+                """.formatted(orderId, amount);
+
         mockMvc.perform(post("/payments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"orderId": "o-1", "amount": 0}
-                                """))
+                        .content(requestBody))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void rejectsNegativeAmount() throws Exception {
+    void pay_negativeAmount_returnsBadRequest() throws Exception {
+        String orderId = "o-1";
+        BigDecimal amount = new BigDecimal("-5");
+        String requestBody = """
+                {"orderId": "%s", "amount": %s}
+                """.formatted(orderId, amount);
+
         mockMvc.perform(post("/payments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"orderId": "o-1", "amount": -5}
-                                """))
+                        .content(requestBody))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void rejectsMissingOrderId() throws Exception {
+    void pay_missingOrderId_returnsBadRequest() throws Exception {
+        BigDecimal amount = new BigDecimal("49.90");
+        String requestBody = """
+                {"amount": %s}
+                """.formatted(amount);
+
         mockMvc.perform(post("/payments")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"amount": 49.90}
-                                """))
+                        .content(requestBody))
                 .andExpect(status().isBadRequest());
     }
 }
