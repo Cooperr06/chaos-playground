@@ -31,7 +31,7 @@ Verwaltet den Lagerbestand. Der Shop fragt hier die Verfügbarkeit ab und reserv
 - Thread-Sicherheit: Prüfen und Abziehen müssen atomar passieren, sonst wird mehr verkauft als da ist. Tipp: `ConcurrentHashMap` mit `compute(...)`.
 - Fehler auf Statuscodes abbilden: Der Service wirft eigene Exceptions (z. B. `ProductNotFoundException`, `InsufficientStockException`), die zu `404` bzw. `409` werden. Entweder erben die Exceptions von `ErrorResponseException`, oder `@ExceptionHandler` bzw. `@RestControllerAdvice` übernimmt die Abbildung. Spring antwortet dann mit `ProblemDetail` (RFC 9457).
 - Records für Request und Response, Bean Validation wie im `payment-service`.
-- Package by feature: alles in `de.cooperr.chaos.inventory`.
+- Packages nach Schicht unter `de.cooperr.chaos.inventory`: `controller`, `service`, `dto`, `exception`, `config`.
 
 ## Tests (Akzeptanzkriterien)
 
