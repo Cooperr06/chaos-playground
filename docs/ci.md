@@ -12,7 +12,7 @@ Workflow-Artifacts sind Dateien, die an einem einzelnen Lauf hängen und nach ei
 2. Trigger: `push` auf `main` und `pull_request` auf `main`.
 3. Ein Job auf einem von GitHub gehosteten Linux-Runner:
    - Code auschecken (`actions/checkout`).
-   - JDK 25 einrichten (`actions/setup-java`), Distribution Corretto wie lokal, Maven-Cache über die eingebaute `cache`-Option der Action.
+   - JDK 25 einrichten (`actions/setup-java`), Distribution Temurin wie lokal und in den Images, Maven-Cache über die eingebaute `cache`-Option der Action.
    - `./mvnw -B verify` im Root (Batch-Modus, alle Module mit Tests). Der Wrapper ist im Git schon ausführbar markiert.
 4. Rechte des `GITHUB_TOKEN` auf das Nötigste beschränken (`permissions: contents: read`).
 5. Versionen der Actions auf deren GitHub-Seite nachsehen (aktuelles Major-Tag), nicht aus dem Gedächtnis nehmen.
