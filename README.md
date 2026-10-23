@@ -60,3 +60,7 @@ Chaos entsteht über zwei Wege: Ausfall per Docker-API (Container stoppen oder p
 - **Als Nächstes:** Shop, Lager und Zahlung lauffähig mit Docker Compose, Chaos-Endpunkt, Lastgenerator, Szenario 1 mit Circuit Breaker.
 - **Danach:** Chaos-Controller mit Weboberfläche, Live-Dashboard, Szenarien 2 bis 4.
 - **Zugang:** Das Dashboard bekommt zwei Logins, `viewer` (nur ansehen) und `admin` (zusätzlich Chaos-Knöpfe), damit Gäste die Demo selbst ausprobieren können.
+
+## Lizenz
+
+Apache License 2.0, siehe `LICENSE` und `NOTICE`.
