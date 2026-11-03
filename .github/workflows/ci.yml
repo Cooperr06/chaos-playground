@@ -58,3 +58,43 @@ jobs:
           tags: |
             ghcr.io/cooperr06/${{ matrix.module }}:latest
             ghcr.io/cooperr06/${{ matrix.module }}:${{ github.sha }}
+
+  smoke-test:
+    needs: build
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Start services
+        run: docker compose up --build -d
+
+      - name: Wait for services
+        run: |
+          for port in 8080 8081 8082; do
+            curl --silent --fail --retry 30 --retry-delay 2 --retry-all-errors \
+              "http://localhost:$port/actuator/health"
+          done
+
+      - name: Order for known product returns 201
+        run: |
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --request POST localhost:8080/orders \
+            --header 'Content-Type: application/json' \
+            --data '{"productId":"watch-1","quantity":1,"totalAmount":99.90}')
+          [ "$status" = 201 ] || { echo "expected 201, got $status"; exit 1; }
+
+      - name: Order for unknown product returns 404
+        run: |
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --request POST localhost:8080/orders \
+            --header 'Content-Type: application/json' \
+            --data '{"productId":"unknown","quantity":1,"totalAmount":99.90}')
+          [ "$status" = 404 ] || { echo "expected 404, got $status"; exit 1; }
+
+      - name: Show logs
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop services
+        if: always()
+        run: docker compose down
