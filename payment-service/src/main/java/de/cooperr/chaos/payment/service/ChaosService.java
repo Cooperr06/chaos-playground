@@ -10,14 +10,14 @@ import java.util.concurrent.atomic.AtomicReference;
 @Service
 public class ChaosService {
 
-    private AtomicReference<ChaosSettings> settings = new AtomicReference<>(ChaosSettings.DEFAULT);
+    private final AtomicReference<ChaosSettings> settings = new AtomicReference<>(ChaosSettings.DEFAULT);
 
     public ChaosSettings getSettings() {
         return settings.get();
     }
 
-    public ChaosSettings updateSettings(ChaosSettings newSettings) {
-        return settings.updateAndGet(settings -> newSettings);
+    public ChaosSettings updateSettings(ChaosSettings settings) {
+        return this.settings.updateAndGet(_ -> settings);
     }
 
     public void injectChaos() {

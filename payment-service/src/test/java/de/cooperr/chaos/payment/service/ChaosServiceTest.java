@@ -5,15 +5,14 @@ import de.cooperr.chaos.payment.exception.ChaosException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ChaosServiceTest {
+class ChaosServiceTest {
 
     private ChaosService service;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         service = new ChaosService();
     }
 
@@ -56,10 +55,15 @@ public class ChaosServiceTest {
 
     @Test
     void injectChaos_latencySet_waitsAtLeastLatency() {
-        var settings = new ChaosSettings(200, 0.5);
+        var settings = new ChaosSettings(200, 0.0);
 
         service.updateSettings(settings);
 
-        // TODO
+        var startTime = System.nanoTime();
+        service.injectChaos();
+        var endTime = System.nanoTime();
+
+        var elapsedTime = endTime - startTime;
+        assertTrue(elapsedTime >= settings.latencyMs());
     }
 }

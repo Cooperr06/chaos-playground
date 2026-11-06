@@ -46,7 +46,15 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <!--suppress UnresolvedMavenProperty -->
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar} -Xshare:off</argLine>
+                    <properties>
+                        <configurationParameters>
+                            junit.jupiter.execution.parallel.enabled=true
+                            junit.jupiter.execution.parallel.mode.default=same_thread
+                            junit.jupiter.execution.parallel.mode.classes.default=concurrent
+                        </configurationParameters>
+                    </properties>
                 </configuration>
             </plugin>
         </plugins>

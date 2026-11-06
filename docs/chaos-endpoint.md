@@ -47,7 +47,7 @@ Jeder sabotierbare Dienst bekommt einen Endpunkt `/chaos`, über den sich künst
   - `POST` mit gültigen Werten liefert `200`.
   - `POST` mit `latencyMs` -1, `latencyMs` 30001, `errorRate` 1.5, ohne `errorRate` und ohne Body liefert jeweils `400`.
 - Bestehender Controller-Test (`PaymentControllerTest` bzw. `InventoryControllerTest`) bekommt `@MockitoBean ChaosService` und bleibt sonst unverändert grün.
-- `ChaosInterceptorTest`: `@SpringBootTest` mit `@AutoConfigureMockMvc` (`org.springframework.boot.webmvc.test.autoconfigure`), echter `ChaosService`, damit auch `/actuator/health` geladen ist. Der Zustand nach jedem Test zurücksetzen (`@AfterEach`), weil der Spring-Kontext zwischen Tests geteilt wird.
+- `ChaosInterceptorTest`: `@SpringBootTest` mit `@AutoConfigureMockMvc` (`org.springframework.boot.webmvc.test.autoconfigure`), echter `ChaosService`, damit auch `/actuator/health` geladen ist. Der Zustand nach jedem Test zurücksetzen (`@AfterEach`), weil der Spring-Kontext zwischen Tests geteilt wird. Die Klasse trägt `@Isolated` (`org.junit.jupiter.api.parallel`), weil Testklassen parallel laufen (Root-`pom.xml`) und ein gesetztes Chaos sonst andere Tests im selben Kontext trifft.
   - Mit `errorRate` 1.0 liefert der Fachendpunkt (`POST /payments` bzw. `GET /inventory/watch-1`) `500`.
   - Mit `errorRate` 1.0 liefern `GET /chaos` und `GET /actuator/health` weiter `200`.
   - Ohne Chaos antwortet der Fachendpunkt normal.
