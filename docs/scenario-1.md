@@ -29,7 +29,7 @@ Nach dem Entfernen der Latenz geht der Breaker nach der Wartezeit in HALF_OPEN, 
 5. **Fallback** (nur mit Resilienz): Scheitert die Zahlung (Timeout, Fehlerstatus, Verbindungsfehler oder Breaker offen), antwortet der Shop mit `202 Accepted` und `status` `PAYMENT_PENDING`, `paymentId` ist `null`. Die Reservierung im Lager bleibt bestehen. Ohne Resilienz bleibt es bei `502`.
    - Fehler des Lagers (`404`, `409`, `502`) ändern sich nicht. Szenario 1 betrifft nur die Zahlung.
    - Das Nachholen der Zahlung gibt es nicht wirklich, `PAYMENT_PENDING` ist nur die Antwort an die Kundschaft.
-6. **Actuator:** `management.endpoints.web.exposure.include: health,circuitbreakers`. `GET /actuator/circuitbreakers` zeigt Zustand und Fehlerquote des Breakers. Ohne Resilienz ist die Liste leer.
+6. **Actuator:** `management.endpoints.web.exposure.include: health,circuitbreakers`. `GET /actuator/circuitbreakers` zeigt Zustand und Fehlerquote des Breakers. Ohne Resilienz steht der Breaker dort auch, bleibt aber unbenutzt (`CLOSED`, `bufferedCalls` 0).
 7. **Logging:** Zustandswechsel des Breakers auf INFO (`CLOSED -> OPEN` usw.), über `circuitBreaker.getEventPublisher().onStateTransition(...)`. Pro Fallback eine Zeile auf WARN wie bisher bei Fehlern.
 
 ## Vorgaben zur Umsetzung
@@ -40,7 +40,7 @@ Nach dem Entfernen der Latenz geht der Breaker nach der Wartezeit in HALF_OPEN, 
 - **Kein `TimeLimiter`** von Resilience4j: Der arbeitet nur mit asynchronen Aufrufen (`CompletionStage`), der `RestClient` ist synchron. Der Read-Timeout erfüllt denselben Zweck.
 - **Fallback im `OrderService`**, nicht im Client: Ob eine gescheiterte Zahlung zu `502` oder zu `PAYMENT_PENDING` führt, ist eine fachliche Entscheidung. Der `OrderService` fängt die `DownstreamServiceException` der Zahlung und entscheidet anhand von `resilience-enabled`. Er weiß weiter nichts von HTTP.
 - `OrderStatus` bekommt `PAYMENT_PENDING`. Der `OrderController` gibt `ResponseEntity<OrderResponse>` zurück, `201` bei `CONFIRMED`, `202` bei `PAYMENT_PENDING`.
-- Ohne Resilienz wird weder Registry noch Breaker angelegt oder benutzt, `GET /actuator/circuitbreakers` zeigt dann keinen Eintrag. Die Instanz in der Registry entsteht erst beim ersten `registry.circuitBreaker("payment-service")`.
+- Die Auto-Configuration legt jede Instanz aus der YAML schon beim Start in der Registry an, auch ohne Resilienz (geprüft in einer Kopie des Shops). Ohne Resilienz gibt der `PaymentClient` den Breaker einfach nicht an `ServiceClient` weiter, er bleibt unbenutzt.
 
 ## Docker Compose, Lastgenerator und CI
 
