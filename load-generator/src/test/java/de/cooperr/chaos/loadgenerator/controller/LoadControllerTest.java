@@ -101,13 +101,4 @@ class LoadControllerTest {
 
         verify(loadService, never()).updateRate(anyInt());
     }
-
-    @Test
-    void updateRate_missingBody_returnsBadRequest() throws Exception {
-        mockMvc.perform(post("/load")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verify(loadService, never()).updateRate(anyInt());
-    }
 }

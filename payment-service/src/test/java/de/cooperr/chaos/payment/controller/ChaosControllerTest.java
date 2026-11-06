@@ -131,16 +131,4 @@ class ChaosControllerTest {
 
         verify(chaosService, never()).updateSettings(any());
     }
-
-    @Test
-    void updateSettings_missingBody_returnsBadRequest() throws Exception {
-        String requestBody = "{}";
-
-        mockMvc.perform(post("/chaos")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isBadRequest());
-
-        verify(chaosService, never()).updateSettings(any());
-    }
 }

@@ -72,7 +72,7 @@ Ersetzt die Kundschaft: Der Dienst schickt im festen Takt Bestellungen an den Sh
 - `LoadControllerTest`: `@WebMvcTest(LoadController.class)`, `LoadService` gemockt mit `@MockitoBean`.
   - `GET` liefert `200` mit den Werten aus dem Mock.
   - `POST` mit `ratePerSecond` 10 liefert `200`.
-  - `POST` mit `ratePerSecond` -1, 101, ohne Feld und ohne Body liefert jeweils `400`, der Service wird nicht aufgerufen.
+  - `POST` mit `ratePerSecond` -1, 101 und ohne Feld liefert jeweils `400`, der Service wird nicht aufgerufen. Ohne Feld würde sonst still Rate 0 gesetzt, wenn Jackson fehlende `int`-Felder nicht mehr ablehnt. Einen Test ohne Body gibt es nicht, das prüft nur Spring selbst.
 - `OrderClientTest`: `RestClient` an einen `MockRestServiceServer` gebunden, wie die Client-Tests im `shop-service`.
   - Antwort `201` ergibt Status 201.
   - Antwort `502` ergibt Status 502, ohne Exception.

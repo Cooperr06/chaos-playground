@@ -45,7 +45,7 @@ Jeder sabotierbare Dienst bekommt einen Endpunkt `/chaos`, über den sich künst
 - `ChaosControllerTest`: `@WebMvcTest(ChaosController.class)`, Service gemockt mit `@MockitoBean`.
   - `GET` liefert `200` mit den Werten.
   - `POST` mit gültigen Werten liefert `200`.
-  - `POST` mit `latencyMs` -1, `latencyMs` 30001, `errorRate` 1.5, ohne `errorRate` und ohne Body liefert jeweils `400`.
+  - `POST` mit `latencyMs` -1, `latencyMs` 30001, `errorRate` 1.5 und ohne `errorRate` liefert jeweils `400`. Der Fall ohne `errorRate` sichert ab, dass Jackson fehlende Felder bei `int` und `double` weiter ablehnt (siehe Feature 1), sonst käme still 0 an. Einen Test ohne Body gibt es nicht, das prüft nur Spring selbst.
 - Bestehender Controller-Test (`PaymentControllerTest` bzw. `InventoryControllerTest`) bekommt `@MockitoBean ChaosService` und bleibt sonst unverändert grün.
 - `ChaosInterceptorTest`: `@SpringBootTest` mit `@AutoConfigureMockMvc` (`org.springframework.boot.webmvc.test.autoconfigure`), echter `ChaosService`, damit auch `/actuator/health` geladen ist. Der Zustand nach jedem Test zurücksetzen (`@AfterEach`), weil der Spring-Kontext zwischen Tests geteilt wird. Die Klasse trägt `@Isolated` (`org.junit.jupiter.api.parallel`), weil Testklassen parallel laufen (Root-`pom.xml`) und ein gesetztes Chaos sonst andere Tests im selben Kontext trifft.
   - Mit `errorRate` 1.0 liefert der Fachendpunkt (`POST /payments` bzw. `GET /inventory/watch-1`) `500`.
