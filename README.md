@@ -65,8 +65,8 @@ Shop, Lager, Zahlung und Lastgenerator laufen dann auf `127.0.0.1:8080`, `8081`,
 
 ## Plan
 
-- **Fertig:** `payment-service`, `inventory-service` und `shop-service` (ohne Resilienz) mit Tests, Dockerfiles, Docker Compose, CI-Pipeline mit Images auf `ghcr.io` und Smoke-Test, Chaos-Endpunkt in Zahlung und Lager.
-- **Als Nächstes:** Lastgenerator, Szenario 1 mit Circuit Breaker.
+- **Fertig:** `payment-service`, `inventory-service` und `shop-service` (ohne Resilienz) mit Tests, Dockerfiles, Docker Compose, CI-Pipeline mit Images auf `ghcr.io` und Smoke-Test, Chaos-Endpunkt in Zahlung und Lager, Lastgenerator.
+- **Als Nächstes:** Szenario 1 mit Timeout und Circuit Breaker, zwei Shops nebeneinander (`docs/scenario-1.md`).
 - **Danach:** Chaos-Controller mit Weboberfläche, Live-Dashboard, Szenarien 2 bis 4.
 - **Zugang:** Das Dashboard bekommt zwei Logins, `viewer` (nur ansehen) und `admin` (zusätzlich Chaos-Knöpfe), damit Gäste die Demo selbst ausprobieren können.
 

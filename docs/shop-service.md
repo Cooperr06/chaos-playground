@@ -91,4 +91,4 @@ Erwartet: `201`, `409`, `404`. Danach den `payment-service` beenden und die erst
 
 ## Ausblick: Szenario 1 mit zwei Shops
 
-Damit man Vorher und Nachher gleichzeitig sieht, gibt es später keinen Umschalter, sondern zwei Instanzen desselben Codes: `shop-plain` ohne und `shop-resilient` mit Resilienz, per Konfiguration gewählt. Der Lastgenerator schickt dieselbe Last an beide, das Dashboard zeigt sie nebeneinander. Noch nicht entschieden, das kommt mit der Aufgabe zu Szenario 1.
+Damit man Vorher und Nachher gleichzeitig sieht, gibt es später keinen Umschalter, sondern zwei Instanzen desselben Codes: `shop-plain` ohne und `shop-resilient` mit Resilienz, per Konfiguration gewählt. Der Lastgenerator schickt dieselbe Last an beide, das Dashboard zeigt sie nebeneinander. Entschieden, Details in `docs/scenario-1.md`.
