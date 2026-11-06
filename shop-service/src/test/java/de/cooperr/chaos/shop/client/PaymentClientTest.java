@@ -1,11 +1,14 @@
 package de.cooperr.chaos.shop.client;
 
 import de.cooperr.chaos.shop.exception.DownstreamServiceException;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
@@ -29,12 +32,21 @@ class PaymentClientTest {
 
     private MockRestServiceServer server;
     private PaymentClient paymentClient;
+    private CircuitBreaker circuitBreaker;
+    private PaymentClient guardedPaymentClient;
 
     @BeforeEach
     void setUp() {
         RestClient.Builder builder = RestClient.builder().baseUrl(BASE_URL);
         server = MockRestServiceServer.bindTo(builder).build();
         paymentClient = new PaymentClient(builder.build());
+
+        circuitBreaker = CircuitBreaker.of("payment-service", CircuitBreakerConfig.custom()
+                .slidingWindowSize(2)
+                .minimumNumberOfCalls(2)
+                .failureRateThreshold(50)
+                .build());
+        guardedPaymentClient = new PaymentClient(builder.build(), circuitBreaker);
     }
 
     @Test
@@ -105,5 +117,34 @@ class PaymentClientTest {
                 .andRespond(withStatus(HttpStatus.CREATED));
 
         assertThrows(DownstreamServiceException.class, () -> paymentClient.pay(orderId, totalAmount));
+    }
+
+    @Test
+    void pay_twoServerErrors_opensCircuitBreaker() {
+        UUID orderId = UUID.randomUUID();
+        BigDecimal totalAmount = new BigDecimal("99.90");
+
+        server.expect(ExpectedCount.twice(), requestTo("%s/payments".formatted(BASE_URL)))
+                .andRespond(withServerError());
+
+        assertThrows(DownstreamServiceException.class, () -> guardedPaymentClient.pay(orderId, totalAmount));
+        assertThrows(DownstreamServiceException.class, () -> guardedPaymentClient.pay(orderId, totalAmount));
+
+        assertEquals(CircuitBreaker.State.OPEN, circuitBreaker.getState());
+        server.verify();
+    }
+
+    @Test
+    void pay_circuitBreakerOpen_throwsDownstreamServiceExceptionWithoutCall() {
+        UUID orderId = UUID.randomUUID();
+        BigDecimal totalAmount = new BigDecimal("99.90");
+
+        circuitBreaker.transitionToOpenState();
+
+        DownstreamServiceException exception = assertThrows(DownstreamServiceException.class,
+                () -> guardedPaymentClient.pay(orderId, totalAmount));
+
+        assertEquals("payment-service", exception.getService());
+        server.verify();
     }
 }
