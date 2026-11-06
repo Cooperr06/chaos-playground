@@ -7,7 +7,29 @@ spring:
 
 server:
   port: 8080
+  tomcat:
+    threads:
+      max: 20
 
 shop:
   inventory-url: http://localhost:8081
   payment-url: http://localhost:8082
+  resilience-enabled: false
+  payment-timeout: 1s
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      payment-service:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,circuitbreakers
