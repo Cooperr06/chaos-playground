@@ -64,7 +64,7 @@ Ersetzt die Kundschaft: Der Dienst schickt im festen Takt Bestellungen an den Sh
 ## Docker Compose und CI
 
 - `load-generator/Dockerfile` wie die der anderen Dienste.
-- In `docker-compose.yml` ein Dienst `load-generator`, Container `chaos-playground-load`, Port `127.0.0.1:8091:8091`, `depends_on: shop-service`. Ziel per Umgebungsvariable auf `http://shop-service:8080`: `LOADGENERATOR_TARGETURLS_0` (Bindestriche fallen weg, der Listenindex steht am Ende). Ausprobiert mit dem gebauten Jar, `GET /load` zeigt dann die Adresse aus der Variable.
+- In `docker-compose.yml` ein Dienst `load-generator`, Container `chaos-playground-load`, Port `127.0.0.1:8091:8091`, `depends_on: shop-service`. Ziel per Umgebungsvariable auf `http://shop-service:8080`: `LOADGENERATOR_TARGETURLS_0` (Bindestriche fallen weg, der Listenindex steht am Ende). Ausprobiert mit dem gebauten Jar, `GET /load` zeigt dann die Adresse aus der Variable. Seit Szenario 1 sind es zwei Ziele, `http://shop-plain:8080` und `http://shop-resilient:8080` (siehe `docs/scenario-1.md`).
 - `load-generator` in die Matrix des Jobs `images` in `.github/workflows/ci.yml` aufnehmen. Im Smoke-Test ein Schritt, der den Lastgenerator kurz Bestellungen schicken lässt (siehe `docs/ci.md`, Stufe 3).
 
 ## Tests (Akzeptanzkriterien)
@@ -102,7 +102,7 @@ docker compose down
 
 Erwartet: Nach einigen Sekunden wächst `statusCounts.201` um etwa 10 pro Sekunde. Mit Chaos am `payment-service` wächst stattdessen `502`. Nach Rate 0 bleibt `sent` stehen.
 
-Timeout prüfen: Latenz am `payment-service` auf 15000 setzen, `timeouts` steigt nach 10 Sekunden, `inFlight` liegt bei etwa Rate mal 10. Verbindungsfehler prüfen: `docker compose stop shop-service`, `connectionErrors` steigt.
+Timeout prüfen: Latenz am `payment-service` auf 15000 setzen, `timeouts` steigt nach 10 Sekunden, `inFlight` liegt bei etwa Rate mal 10. Verbindungsfehler prüfen: `docker compose stop shop-plain`, `connectionErrors` steigt.
 
 ## Nicht Teil dieser Aufgabe
 

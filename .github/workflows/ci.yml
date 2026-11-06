@@ -70,7 +70,7 @@ jobs:
 
       - name: Wait for services
         run: |
-          for port in 8080 8081 8082 8091; do
+          for port in 8080 8081 8082 8083 8091; do
             curl --silent --fail --retry 30 --retry-delay 2 --retry-all-errors \
               "http://localhost:$port/actuator/health"
           done
@@ -107,7 +107,23 @@ jobs:
             --data '{"latencyMs":0,"errorRate":0}'
           [ "$status" = 502 ] || { echo "expected 502, got $status"; exit 1; }
 
-      - name: Load generator places orders in the shop
+      - name: Resilient order with failing payment returns 202
+        run: |
+          curl --silent --fail --output /dev/null \
+            --request POST localhost:8082/chaos \
+            --header 'Content-Type: application/json' \
+            --data '{"latencyMs":0,"errorRate":1.0}'
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --request POST localhost:8083/orders \
+            --header 'Content-Type: application/json' \
+            --data '{"productId":"watch-1","quantity":1,"totalAmount":99.90}')
+          curl --silent --fail --output /dev/null \
+            --request POST localhost:8082/chaos \
+            --header 'Content-Type: application/json' \
+            --data '{"latencyMs":0,"errorRate":0}'
+          [ "$status" = 202 ] || { echo "expected 202, got $status"; exit 1; }
+
+      - name: Load generator places orders in both shops
         run: |
           curl --silent --fail --output /dev/null \
             --request POST localhost:8091/load \
@@ -120,8 +136,8 @@ jobs:
             --header 'Content-Type: application/json' \
             --data '{"ratePerSecond":0}'
           echo "$load"
-          created=$(echo "$load" | grep -o '"201":[0-9]*' | cut -d: -f2)
-          [ "${created:-0}" -gt 0 ] || { echo "expected orders with 201, got none"; exit 1; }
+          targets=$(echo "$load" | grep -o '"201":[1-9][0-9]*' | wc -l)
+          [ "$targets" -eq 2 ] || { echo "expected orders with 201 for both shops, got $targets"; exit 1; }
 
       - name: Show logs
         if: failure()

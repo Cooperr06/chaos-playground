@@ -23,7 +23,7 @@ Bringt `shop-service`, `inventory-service` und `payment-service` mit einem Befeh
 - Keine Secrets oder Zugangsdaten in Dockerfile oder Compose-Datei.
 - Image-Größe und Build-Zeit im Blick behalten (Maven-Cache nutzen, z. B. eine Cache-Mount in der Build-Stufe). Kein Anspruch auf Perfektion.
 - Kein Healthcheck im ersten Schritt. Ein Healthcheck über `/actuator/health` braucht ein Tool im Image (`curl` oder `wget`), das ein JRE-Image oft nicht mitbringt. Erst entscheiden, wenn der Chaos-Controller Container neu startet.
-- Namen der Container und Dienste so wählen, dass der Chaos-Controller sie später über die Docker-API eindeutig findet (Dienstname gleich Modulname, Projektname fest). Die Container heißen `chaos-playground-<kurzname>` (`chaos-playground-shop`, `-inventory`, `-payment`), `container_name` ist in der Compose-Datei gesetzt. Die Dienste erreichen sich weiter über den Dienstnamen, nicht über den Container-Namen.
+- Namen der Container und Dienste so wählen, dass der Chaos-Controller sie später über die Docker-API eindeutig findet (Dienstname gleich Modulname, Projektname fest). Die Container heißen `chaos-playground-<kurzname>` (`chaos-playground-inventory`, `-payment`, seit Szenario 1 `-shop-plain` und `-shop-resilient` statt `-shop`, siehe `docs/scenario-1.md`), `container_name` ist in der Compose-Datei gesetzt. Die Dienste erreichen sich weiter über den Dienstnamen, nicht über den Container-Namen.
 
 ## Akzeptanzkriterien
 

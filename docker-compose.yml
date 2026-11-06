@@ -19,8 +19,8 @@ services:
       - "127.0.0.1:8081:8081"
     restart: unless-stopped
 
-  shop-service:
-    container_name: chaos-playground-shop
+  shop-plain:
+    container_name: chaos-playground-shop-plain
     build:
       context: .
       dockerfile: shop-service/Dockerfile
@@ -34,6 +34,22 @@ services:
       - payment-service
     restart: unless-stopped
 
+  shop-resilient:
+    container_name: chaos-playground-shop-resilient
+    build:
+      context: .
+      dockerfile: shop-service/Dockerfile
+    ports:
+      - "127.0.0.1:8083:8080"
+    environment:
+      SHOP_INVENTORYURL: http://inventory-service:8081
+      SHOP_PAYMENTURL: http://payment-service:8082
+      SHOP_RESILIENCEENABLED: "true"
+    depends_on:
+      - inventory-service
+      - payment-service
+    restart: unless-stopped
+
   load-generator:
     container_name: chaos-playground-load
     build:
@@ -42,7 +58,9 @@ services:
     ports:
       - "127.0.0.1:8091:8091"
     environment:
-      LOADGENERATOR_TARGETURLS_0: http://shop-service:8080
+      LOADGENERATOR_TARGETURLS_0: http://shop-plain:8080
+      LOADGENERATOR_TARGETURLS_1: http://shop-resilient:8080
     depends_on:
-      - shop-service
+      - shop-plain
+      - shop-resilient
     restart: unless-stopped
