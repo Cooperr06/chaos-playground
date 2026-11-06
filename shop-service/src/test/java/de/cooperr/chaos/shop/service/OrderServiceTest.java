@@ -2,6 +2,7 @@ package de.cooperr.chaos.shop.service;
 
 import de.cooperr.chaos.shop.client.InventoryClient;
 import de.cooperr.chaos.shop.client.PaymentClient;
+import de.cooperr.chaos.shop.config.ShopProperties;
 import de.cooperr.chaos.shop.dto.OrderRequest;
 import de.cooperr.chaos.shop.dto.OrderResponse;
 import de.cooperr.chaos.shop.dto.OrderStatus;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,11 +29,19 @@ class OrderServiceTest {
     private PaymentClient paymentClient;
     private OrderService orderService;
 
+    private OrderService resilientOrderService;
+
     @BeforeEach
     void setUp() {
         inventoryClient = mock(InventoryClient.class);
         paymentClient = mock(PaymentClient.class);
-        orderService = new OrderService(inventoryClient, paymentClient);
+        orderService = new OrderService(inventoryClient, paymentClient, properties(false));
+        resilientOrderService = new OrderService(inventoryClient, paymentClient, properties(true));
+    }
+
+    private static ShopProperties properties(boolean resilienceEnabled) {
+        return new ShopProperties("http://inventory-service", "http://payment-service",
+                resilienceEnabled, Duration.ofSeconds(1));
     }
 
     @Test
@@ -82,5 +92,38 @@ class OrderServiceTest {
                 .thenThrow(new DownstreamServiceException("payment-service", new RuntimeException("connection refused")));
 
         assertThrows(DownstreamServiceException.class, () -> orderService.placeOrder(request));
+    }
+
+    @Test
+    void placeOrder_paymentFailsWithResilience_returnsPaymentPending() {
+        String productId = "a";
+        int quantity = 2;
+        UUID reservationId = UUID.randomUUID();
+        OrderRequest request = new OrderRequest(productId, quantity, new BigDecimal("99.90"));
+
+        when(inventoryClient.reserve(productId, quantity)).thenReturn(reservationId);
+        when(paymentClient.pay(any(), any()))
+                .thenThrow(new DownstreamServiceException("payment-service", new RuntimeException("timeout")));
+
+        OrderResponse response = resilientOrderService.placeOrder(request);
+
+        assertAll(
+                () -> assertEquals(OrderStatus.PAYMENT_PENDING, response.status()),
+                () -> assertNull(response.paymentId()),
+                () -> assertEquals(reservationId, response.reservationId())
+        );
+    }
+
+    @Test
+    void placeOrder_inventoryFailsWithResilience_throwsDownstreamServiceException() {
+        String productId = "a";
+        int quantity = 2;
+        OrderRequest request = new OrderRequest(productId, quantity, new BigDecimal("99.90"));
+
+        when(inventoryClient.reserve(productId, quantity))
+                .thenThrow(new DownstreamServiceException("inventory-service", new RuntimeException("connection refused")));
+
+        assertThrows(DownstreamServiceException.class, () -> resilientOrderService.placeOrder(request));
+        verify(paymentClient, never()).pay(any(), any());
     }
 }

@@ -62,6 +62,28 @@ class OrderControllerTest {
     }
 
     @Test
+    void createOrder_paymentPending_returnsAccepted() throws Exception {
+        String productId = "a";
+        int quantity = 2;
+        BigDecimal totalAmount = new BigDecimal("99.90");
+        UUID orderId = UUID.randomUUID();
+        UUID reservationId = UUID.randomUUID();
+        String requestBody = """
+                {"productId": "%s", "quantity": %d, "totalAmount": %s}
+                """.formatted(productId, quantity, totalAmount);
+
+        when(orderService.placeOrder(any(OrderRequest.class)))
+                .thenReturn(new OrderResponse(orderId, productId, quantity, reservationId, null, OrderStatus.PAYMENT_PENDING));
+
+        mockMvc.perform(post("/orders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.paymentId").isEmpty())
+                .andExpect(jsonPath("$.status").value("PAYMENT_PENDING"));
+    }
+
+    @Test
     void createOrder_zeroQuantity_returnsBadRequest() throws Exception {
         String productId = "a";
         int quantity = 0;
