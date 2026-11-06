@@ -1,3 +1,15 @@
 spring:
   application:
     name: load-generator
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: 8091
+
+load-generator:
+  target-urls:
+    - http://localhost:8080
+  rate-per-second: 0
+  timeout: 10s

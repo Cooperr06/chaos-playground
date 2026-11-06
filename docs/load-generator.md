@@ -7,7 +7,7 @@ Ersetzt die Kundschaft: Der Dienst schickt im festen Takt Bestellungen an den Sh
 1. Port 8091 und `spring.mvc.problemdetails.enabled: true` in `application.yaml`. In der `pom.xml` fehlt `spring-boot-starter-validation`, die Dependency muss ergänzt werden.
 2. Konfiguration über einen `@ConfigurationProperties`-Record:
    ```
-   load:
+   load-generator:
      target-urls:
        - http://localhost:8080
      rate-per-second: 0
@@ -54,12 +54,12 @@ Ersetzt die Kundschaft: Der Dienst schickt im festen Takt Bestellungen an den Sh
 - **Fehlerstatus ohne Exception:** Standardmäßig wirft `retrieve()` bei `4xx` und `5xx` eine Exception. Für den Lastgenerator ist nur der Status wichtig. Wie man ihn ohne Exception bekommt (z. B. `exchange` oder `onStatus`), bitte in der Spring-Doku bzw. im Quelltext nachsehen, nicht raten.
 - **Zähler sind threadsicher**, weil viele virtuelle Threads gleichzeitig zählen. `AtomicLong` oder `LongAdder`, für `statusCounts` eine `ConcurrentHashMap<Integer, LongAdder>`. Keine `synchronized`-Blöcke um die Zähler.
 - Packages nach Schicht unter `de.cooperr.chaos.loadgenerator`:
-  - `config`: `LoadProperties` (`@ConfigurationProperties("load")`, registriert mit `@EnableConfigurationProperties` in `LoadGeneratorApplication`).
+  - `config`: `LoadGeneratorProperties` (`@ConfigurationProperties("load-generator")`, registriert mit `@EnableConfigurationProperties` in `LoadGeneratorApplication`).
   - `controller`: `LoadController` mit `GET` und `POST /load`.
-  - `service`: `LoadService` (Takt, Rate, Zähler).
+  - `service`: `LoadService` (Takt, Rate) und `TargetCounter` (paketprivat, Zähler für ein Ziel). Eine neue Rate ersetzt die `TargetCounter` durch neue, statt jedes Feld einzeln zurückzusetzen. Anfragen, die davor gestartet wurden, zählen dann in die alten, verworfenen Zähler. Das ist für eine Demo in Ordnung.
   - `client`: `OrderClient`, schickt eine Bestellung an eine Basis-Adresse und meldet das Ergebnis (Status, Timeout oder Verbindungsfehler, Dauer). Er weiß nichts vom Takt.
-  - `dto`: `LoadSettings` (Request mit Bean Validation), `LoadStatus` und `TargetStatus` (Response).
-- Beim Herunterfahren beide Executoren schließen, z. B. mit `@PreDestroy` oder indem `LoadService` `AutoCloseable` implementiert. Sonst laufen nach dem Ende eines Tests noch Anfragen weiter.
+  - `dto`: `LoadSettings` (Request mit Bean Validation), `LoadStatus` und `TargetStatus` (Response), `OrderResult` und `OrderOutcome` (Ergebnis einer Bestellung, vom Client an den Service).
+- Beim Herunterfahren beide Executoren schließen: `LoadService` implementiert `AutoCloseable`, Spring ruft `close()` bei solchen Beans von selbst auf (`DisposableBeanAdapter`, spring-beans 7.0.9). In `close()` die Executoren mit `shutdownNow()` beenden, nicht mit `close()`: `ExecutorService.close()` wartet, bis alle laufenden Anfragen fertig sind, also bis zum Timeout.
 
 ## Docker Compose und CI
 
@@ -77,7 +77,7 @@ Ersetzt die Kundschaft: Der Dienst schickt im festen Takt Bestellungen an den Sh
   - Antwort `201` ergibt Status 201.
   - Antwort `502` ergibt Status 502, ohne Exception.
   - Der Request geht als `POST` an `/orders` mit dem Body aus Feature 3.
-  - Timeout und Verbindungsfehler lassen sich mit dem Mock-Server schlecht nachstellen, die werden manuell geprüft.
+  - Timeout: `withException(new HttpTimeoutException(...))` ergibt `TIMEOUT`. Verbindungsfehler: `withException(new IOException(...))` ergibt `CONNECTION_ERROR`. Der `RestClient` verpackt beide in eine `ResourceAccessException`, wie bei einem echten Fehler.
 - `LoadServiceTest`: reiner Unit-Test ohne Spring, `OrderClient` gemockt, Ziel eine feste URL.
   - Ohne gesetzte Rate wird der Client nie aufgerufen.
   - Mit Rate 20 wird der Client nach etwa einer Sekunde ungefähr 20-mal aufgerufen. Mit Awaitility auf "mindestens 15 Aufrufe" warten statt einen genauen Wert zu prüfen, sonst ist der Test wackelig.
