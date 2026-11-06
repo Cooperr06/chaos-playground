@@ -61,7 +61,7 @@ docker compose up --build
 docker compose down
 ```
 
-Shop, Lager und Zahlung laufen dann auf `127.0.0.1:8080`, `8081` und `8082`. Mit `-d` startet alles im Hintergrund.
+Shop, Lager, Zahlung und Lastgenerator laufen dann auf `127.0.0.1:8080`, `8081`, `8082` und `8091`. Mit `-d` startet alles im Hintergrund.
 
 ## Plan
 

@@ -33,3 +33,16 @@ services:
       - inventory-service
       - payment-service
     restart: unless-stopped
+
+  load-generator:
+    container_name: chaos-playground-load
+    build:
+      context: .
+      dockerfile: load-generator/Dockerfile
+    ports:
+      - "127.0.0.1:8091:8091"
+    environment:
+      LOADGENERATOR_TARGETURLS_0: http://shop-service:8080
+    depends_on:
+      - shop-service
+    restart: unless-stopped

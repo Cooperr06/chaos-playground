@@ -64,7 +64,7 @@ Ersetzt die Kundschaft: Der Dienst schickt im festen Takt Bestellungen an den Sh
 ## Docker Compose und CI
 
 - `load-generator/Dockerfile` wie die der anderen Dienste.
-- In `docker-compose.yml` ein Dienst `load-generator`, Container `chaos-playground-load`, Port `127.0.0.1:8091:8091`, `depends_on: shop-service`. Ziel per Umgebungsvariable auf `http://shop-service:8080`. Wie eine Liste per Umgebungsvariable überschrieben wird (Index in der Variable), bitte in der Boot-Doku unter "Binding From Environment Variables" nachsehen.
+- In `docker-compose.yml` ein Dienst `load-generator`, Container `chaos-playground-load`, Port `127.0.0.1:8091:8091`, `depends_on: shop-service`. Ziel per Umgebungsvariable auf `http://shop-service:8080`: `LOADGENERATOR_TARGETURLS_0` (Bindestriche fallen weg, der Listenindex steht am Ende). Ausprobiert mit dem gebauten Jar, `GET /load` zeigt dann die Adresse aus der Variable.
 - `load-generator` in die Matrix des Jobs `images` in `.github/workflows/ci.yml` aufnehmen. Der Smoke-Test bleibt unverändert.
 
 ## Tests (Akzeptanzkriterien)

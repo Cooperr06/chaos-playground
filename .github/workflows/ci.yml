@@ -35,7 +35,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        module: [shop-service, inventory-service, payment-service]
+        module: [shop-service, inventory-service, payment-service, load-generator]
     steps:
       - uses: actions/checkout@v7
 
