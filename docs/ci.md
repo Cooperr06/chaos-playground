@@ -41,6 +41,7 @@ Prüft, dass die Dienste im Container zusammenarbeiten, so wie bisher von Hand m
    - Bestellung für `watch-1`: `201`.
    - Bestellung für ein unbekanntes Produkt: `404`.
    - Bestellung bei absichtlich fehlerhafter Zahlung: `POST /chaos` am `payment-service` mit `{"latencyMs":0,"errorRate":1.0}`, dann liefert die Bestellung `502`, danach Chaos zurücksetzen. Ohne Latenz und mit `errorRate` 1.0 ist das Ergebnis eindeutig und sofort da. Prüft, dass der Interceptor im Container greift und der Shop den Fehler über das Docker-Netz auf `502` abbildet.
+   - Lastgenerator: Rate 10 setzen, 3 Sekunden warten, in `GET /load` steht mindestens eine Bestellung mit `201`, danach Rate 0. Prüft, dass der Lastgenerator sein Ziel aus der Umgebungsvariable bekommt und den Shop über das Docker-Netz erreicht. Gewartet wird vorher auch auf Port 8091.
    - Den Fall "Zahlung gestoppt" nicht automatisieren, die erste Anfrage hängt (kein Timeout im Shop) und würde den Job blockieren, bis das Thema in Szenario 1 gelöst ist.
 6. Der Job schlägt fehl, wenn ein Statuscode nicht passt (`curl --fail` oder ein Vergleich in der Shell). Bei einem Fehler soll `docker compose logs` im Log erscheinen (Schritt mit `if: failure()`), sonst ist die Ursache nicht zu sehen.
 7. `docker compose down` läuft auch bei Fehlern (`if: always()`), sonst bleiben Container auf dem Runner. Auf einem frischen GitHub-Runner ist das nur Ordnung, kein Muss.
