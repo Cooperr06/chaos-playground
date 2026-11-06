@@ -40,6 +40,7 @@ Prüft, dass die Dienste im Container zusammenarbeiten, so wie bisher von Hand m
 5. Geprüft wird nur das, was schnell und eindeutig ist:
    - Bestellung für `watch-1`: `201`.
    - Bestellung für ein unbekanntes Produkt: `404`.
+   - Bestellung bei absichtlich fehlerhafter Zahlung: `POST /chaos` am `payment-service` mit `{"latencyMs":0,"errorRate":1.0}`, dann liefert die Bestellung `502`, danach Chaos zurücksetzen. Ohne Latenz und mit `errorRate` 1.0 ist das Ergebnis eindeutig und sofort da. Prüft, dass der Interceptor im Container greift und der Shop den Fehler über das Docker-Netz auf `502` abbildet.
    - Den Fall "Zahlung gestoppt" nicht automatisieren, die erste Anfrage hängt (kein Timeout im Shop) und würde den Job blockieren, bis das Thema in Szenario 1 gelöst ist.
 6. Der Job schlägt fehl, wenn ein Statuscode nicht passt (`curl --fail` oder ein Vergleich in der Shell). Bei einem Fehler soll `docker compose logs` im Log erscheinen (Schritt mit `if: failure()`), sonst ist die Ursache nicht zu sehen.
 7. `docker compose down` läuft auch bei Fehlern (`if: always()`), sonst bleiben Container auf dem Runner. Auf einem frischen GitHub-Runner ist das nur Ordnung, kein Muss.
@@ -54,7 +55,7 @@ Prüft, dass die Dienste im Container zusammenarbeiten, so wie bisher von Hand m
 
 - Stufe 1: Ein Push auf `main` startet den Workflow, er ist grün, unter "Actions" sind die Testergebnisse im Log sichtbar. Ein absichtlich kaputter Test (lokal, nicht committen oder in einem PR) macht ihn rot.
 - Stufe 2: Nach einem Push auf `main` liegen die drei Images unter "Packages", `docker pull ghcr.io/cooperr06/payment-service:latest` funktioniert auf dem Mac (arm64), und der Container startet.
-- Stufe 3: Der Job `smoke-test` ist bei Push und Pull Request grün. Stellt man die Variable `SHOP_PAYMENTURL` in der Compose-Datei absichtlich auf eine falsche Adresse (lokal ausprobieren, nicht committen), wird der Job rot, weil die Bestellung nicht mehr `201` liefert. Bei Rot steht `docker compose logs` im Job-Log.
+- Stufe 3: Der Job `smoke-test` ist bei Push und Pull Request grün. Stellt man die Variable `SHOP_PAYMENTURL` in der Compose-Datei absichtlich auf eine falsche Adresse (lokal ausprobieren, nicht committen), wird der Job rot, weil die Bestellung nicht mehr `201` liefert. Bei Rot steht `docker compose logs` im Job-Log. Registriert die `ChaosWebConfig` im `payment-service` einen falschen Pfad (lokal ausprobieren, nicht committen), wird der Job rot, weil die Bestellung mit Chaos `201` statt `502` liefert.
 
 ## Nicht Teil dieser Aufgabe
 

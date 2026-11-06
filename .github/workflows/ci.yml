@@ -91,6 +91,22 @@ jobs:
             --data '{"productId":"unknown","quantity":1,"totalAmount":99.90}')
           [ "$status" = 404 ] || { echo "expected 404, got $status"; exit 1; }
 
+      - name: Order with failing payment returns 502
+        run: |
+          curl --silent --fail --output /dev/null \
+            --request POST localhost:8082/chaos \
+            --header 'Content-Type: application/json' \
+            --data '{"latencyMs":0,"errorRate":1.0}'
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --request POST localhost:8080/orders \
+            --header 'Content-Type: application/json' \
+            --data '{"productId":"watch-1","quantity":1,"totalAmount":99.90}')
+          curl --silent --fail --output /dev/null \
+            --request POST localhost:8082/chaos \
+            --header 'Content-Type: application/json' \
+            --data '{"latencyMs":0,"errorRate":0}'
+          [ "$status" = 502 ] || { echo "expected 502, got $status"; exit 1; }
+
       - name: Show logs
         if: failure()
         run: docker compose logs
