@@ -5,6 +5,8 @@ import de.cooperr.chaos.payment.exception.ChaosException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class ChaosServiceTest {
@@ -18,16 +20,16 @@ class ChaosServiceTest {
 
     @Test
     void getSettings_initial_returnsZero() {
-        var expected = ChaosSettings.DEFAULT;
-        var actual = service.getSettings();
+        ChaosSettings expected = ChaosSettings.DEFAULT;
+        ChaosSettings actual = service.getSettings();
 
         assertEquals(expected, actual);
     }
 
     @Test
     void updateSettings_twice_replacesPreviousSettings() {
-        var settings = new ChaosSettings(200, 0.5);
-        var newSettings = new ChaosSettings(500, 0.7);
+        ChaosSettings settings = new ChaosSettings(200, 0.5);
+        ChaosSettings newSettings = new ChaosSettings(500, 0.7);
 
         service.updateSettings(settings);
         service.updateSettings(newSettings);
@@ -37,7 +39,7 @@ class ChaosServiceTest {
 
     @Test
     void injectChaos_errorRateZero_doesNotThrow() {
-        var settings = new ChaosSettings(200, 0.0);
+        ChaosSettings settings = new ChaosSettings(200, 0.0);
 
         service.updateSettings(settings);
 
@@ -46,7 +48,7 @@ class ChaosServiceTest {
 
     @Test
     void injectChaos_errorRateOne_throwsChaosException() {
-        var settings = new ChaosSettings(200, 1.0);
+        ChaosSettings settings = new ChaosSettings(200, 1.0);
 
         service.updateSettings(settings);
 
@@ -55,15 +57,15 @@ class ChaosServiceTest {
 
     @Test
     void injectChaos_latencySet_waitsAtLeastLatency() {
-        var settings = new ChaosSettings(200, 0.0);
+        ChaosSettings settings = new ChaosSettings(200, 0.0);
 
         service.updateSettings(settings);
 
-        var startTime = System.nanoTime();
+        long startTime = System.nanoTime();
         service.injectChaos();
-        var endTime = System.nanoTime();
+        long endTime = System.nanoTime();
 
-        var elapsedTime = endTime - startTime;
-        assertTrue(elapsedTime >= settings.latencyMs());
+        long elapsedMs = Duration.ofNanos(endTime - startTime).toMillis();
+        assertTrue(elapsedMs >= settings.latencyMs());
     }
 }
