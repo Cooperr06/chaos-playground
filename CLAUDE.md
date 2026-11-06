@@ -16,7 +16,7 @@ Ein kleiner Online-Shop aus mehreren Spring-Boot-Diensten, der gezielt sabotiert
 - Kein Modul `common`, solange es nichts Geteiltes gibt.
 - Lokal mit Docker Compose, keine VMs nötig. Mac ist Apple Silicon (arm64). Die Demo läuft später auf einem Raspberry Pi 5 (Portainer, Docker, ebenfalls arm64).
 - GroupId `de.cooperr.chaos`, Java 25, Spring Boot 4.1.1, Konfiguration in YAML, ein Maven Wrapper im Root.
-- Packages nach Schicht: Unter `de.cooperr.chaos.<dienst>` liegen `controller`, `service`, `client` (nur im Shop), `dto` (Requests, Responses, Enums), `exception` und `config` (`@ConfigurationProperties`). Die Application-Klasse bleibt im Wurzelpackage, damit der Component-Scan alle Unterpackages findet. Tests liegen im selben Package wie die getestete Klasse, die `*ApplicationTest` im Wurzelpackage. Records in `dto` sind `public`, weil sie von mehreren Packages genutzt werden.
+- Packages nach Schicht: Unter `de.cooperr.chaos.<dienst>` liegen `controller`, `service`, `client` (Dienste, die andere Dienste per HTTP aufrufen), `dto` (Requests, Responses, Enums), `exception` und `config` (`@ConfigurationProperties`). Die Application-Klasse bleibt im Wurzelpackage, damit der Component-Scan alle Unterpackages findet. Tests liegen im selben Package wie die getestete Klasse, die `*ApplicationTest` im Wurzelpackage. Records in `dto` sind `public`, weil sie von mehreren Packages genutzt werden.
 - Ports: shop 8080, inventory 8081, payment 8082, chaos-controller 8090, load-generator 8091.
 - `spring.mvc.problemdetails.enabled: true` in jedem Dienst, damit Fehlermeldungen (RFC 9457) im JSON ankommen.
 - `totalAmount` ist der Gesamtbetrag einer Bestellung (im Shop und im `payment-service`). Der Shop hat keine Preisliste, der Aufrufer gibt den Betrag mit.
