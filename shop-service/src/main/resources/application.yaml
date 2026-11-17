@@ -10,6 +10,8 @@ server:
   tomcat:
     threads:
       max: 20
+    mbeanregistry:
+      enabled: true
 
 shop:
   inventory-url: http://localhost:8081
@@ -29,7 +31,10 @@ resilience4j:
         automatic-transition-from-open-to-half-open-enabled: true
 
 management:
+  # own connector and threads: metrics and health stay reachable when all 20 shop threads hang
+  server:
+    port: 9080
   endpoints:
     web:
       exposure:
-        include: health,circuitbreakers
+        include: health,circuitbreakers,prometheus

@@ -10,13 +10,13 @@
     --signal-wait: #d99a00;
     --signal-stop: #c23b2e;
 
-    --radius-panel: 0.75rem;
     --radius-control: 0.375rem;
     --space: 1rem;
+    --sidebar-width: 22rem;
 
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     font-size: 100%;
-    line-height: 1.5;
+    line-height: 1.45;
     color: var(--slate);
     background: var(--concrete);
 }
@@ -25,113 +25,195 @@
     box-sizing: border-box;
 }
 
+/* The page never scrolls: the sidebar and Grafana scroll on their own if they have to. */
 body {
-    margin: 0 auto;
-    max-width: 64rem;
-    padding: calc(var(--space) * 2) var(--space);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
 }
 
 h1 {
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 1.375rem;
     letter-spacing: -0.01em;
     line-height: 1.2;
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.375rem;
 }
 
 h2 {
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1rem;
+    margin: 0 0 0.75rem;
+}
+
+h3 {
+    font-size: 0.9375rem;
     margin: 0;
 }
 
-.intro {
+/* Sidebar */
+
+.sidebar {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: var(--sidebar-width);
+}
+
+.sidebar-content {
+    overflow-y: auto;
+    padding: 0 var(--space) var(--space);
+}
+
+.sidebar-toggle {
+    align-items: center;
+    align-self: flex-end;
+    background: none;
+    border: 0;
     color: var(--slate-soft);
-    margin: 0 0 calc(var(--space) * 2);
-    max-width: 38rem;
+    display: flex;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    gap: 0.375rem;
+    margin: 0.5rem 0.5rem 0;
+    padding: 0.25rem 0.5rem;
+}
+
+.toggle-icon::before {
+    content: "\2039";
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+body.sidebar-collapsed .sidebar {
+    width: 2.75rem;
+}
+
+body.sidebar-collapsed .sidebar-content,
+body.sidebar-collapsed .toggle-label {
+    display: none;
+}
+
+body.sidebar-collapsed .sidebar-toggle {
+    align-self: center;
+    margin: 0.5rem 0 0;
+}
+
+body.sidebar-collapsed .toggle-icon::before {
+    content: "\203A";
+}
+
+.intro,
+.hint {
+    color: var(--slate-soft);
+    font-size: 0.8125rem;
+    margin: 0;
 }
 
 .message {
     background: #fbeceb;
-    border-left: 4px solid var(--signal-stop);
+    border-left: 3px solid var(--signal-stop);
     border-radius: var(--radius-control);
-    margin: 0 0 var(--space);
-    padding: 0.75rem var(--space);
+    font-size: 0.875rem;
+    margin: var(--space) 0 0;
+    padding: 0.5rem 0.75rem;
 }
 
-.services {
-    display: grid;
-    gap: var(--space);
-    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+.block {
+    border-top: 1px solid var(--line);
+    margin-top: var(--space);
+    padding-top: var(--space);
 }
 
-.service {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-panel);
-    padding: calc(var(--space) * 1.5);
+/* Load */
+
+.load-controls {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.25rem 0;
+}
+
+.load-controls input[type="range"] {
+    accent-color: var(--enamel);
+    border: 0;
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+}
+
+.load-controls output {
+    font-size: 1.125rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    min-width: 3ch;
+    text-align: right;
+}
+
+/* Services: one block, the services separated by a line */
+
+.service + .service {
+    border-top: 1px dashed var(--line);
+    margin-top: 0.875rem;
+    padding-top: 0.875rem;
 }
 
 .service-header {
     align-items: center;
-    display: grid;
-    gap: 0.25rem var(--space);
-    grid-template-columns: auto 1fr;
-    margin-bottom: calc(var(--space) * 1.5);
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.service-state {
+    color: var(--slate-soft);
+    font-size: 0.8125rem;
+    margin-left: auto;
 }
 
 /* The signal lamp is the one loud element: its color is the container state. */
 .lamp {
     --lamp: var(--line);
     background: radial-gradient(circle at 35% 35%, #ffffff99, transparent 55%), var(--lamp);
-    border: 3px solid var(--slate);
+    border: 2px solid var(--slate);
     border-radius: 50%;
-    grid-row: span 2;
-    height: 3rem;
-    width: 3rem;
+    flex: none;
+    height: 1.125rem;
+    width: 1.125rem;
 }
 
 .service[data-state="RUNNING"] .lamp {
     --lamp: var(--signal-go);
-    box-shadow: 0 0 1rem color-mix(in srgb, var(--signal-go) 60%, transparent);
+    box-shadow: 0 0 0.5rem color-mix(in srgb, var(--signal-go) 60%, transparent);
 }
 
 .service[data-state="PAUSED"] .lamp {
     --lamp: var(--signal-wait);
-    box-shadow: 0 0 1rem color-mix(in srgb, var(--signal-wait) 60%, transparent);
+    box-shadow: 0 0 0.5rem color-mix(in srgb, var(--signal-wait) 60%, transparent);
 }
 
 .service:is([data-state="EXITED"], [data-state="DEAD"]) .lamp {
     --lamp: var(--signal-stop);
 }
 
-.service-state {
-    color: var(--slate-soft);
-    font-variant-numeric: tabular-nums;
-}
-
 .chaos {
-    border-top: 1px solid var(--line);
-    padding-top: var(--space);
-}
-
-.chaos-current {
-    font-variant-numeric: tabular-nums;
-    margin: 0 0 var(--space);
-}
-
-.fields {
     display: grid;
-    gap: var(--space);
+    gap: 0.5rem;
     grid-template-columns: 1fr 1fr;
-    margin-bottom: var(--space);
+    margin-top: 0.5rem;
+}
+
+.chaos .buttons {
+    grid-column: 1 / -1;
 }
 
 label {
     color: var(--slate-soft);
     display: grid;
-    font-size: 0.875rem;
-    gap: 0.25rem;
+    font-size: 0.75rem;
+    gap: 0.125rem;
 }
 
 input {
@@ -139,22 +221,48 @@ input {
     border-radius: var(--radius-control);
     color: var(--slate);
     font: inherit;
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
-    padding: 0.5rem;
+    padding: 0.25rem 0.375rem;
     width: 100%;
 }
 
 .buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.375rem;
 }
 
 .container-actions {
-    border-top: 1px solid var(--line);
-    margin-top: calc(var(--space) * 1.5);
-    padding-top: var(--space);
+    display: grid;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+}
+
+/* Container buttons take the color of the lamp they lead to */
+.container-actions button {
+    min-width: 6rem;
+}
+
+button.go {
+    --button: var(--signal-go);
+}
+
+button.stop {
+    --button: var(--signal-stop);
+}
+
+button.wait {
+    --button: #9a6c00;
+}
+
+button:is(.go, .stop, .wait) {
+    border-color: var(--button);
+    color: var(--button);
+}
+
+button:is(.go, .stop, .wait):hover:not(:disabled) {
+    background: color-mix(in srgb, var(--button) 10%, var(--panel));
 }
 
 button {
@@ -164,8 +272,9 @@ button {
     color: var(--enamel);
     cursor: pointer;
     font: inherit;
+    font-size: 0.8125rem;
     font-weight: 600;
-    padding: 0.5rem 0.875rem;
+    padding: 0.25rem 0.625rem;
 }
 
 button:hover:not(:disabled) {
@@ -192,8 +301,45 @@ input:disabled {
     outline-offset: 2px;
 }
 
-@media (max-width: 30rem) {
-    .fields {
-        grid-template-columns: 1fr;
+/* Grafana fills the rest of the window */
+
+.graphs {
+    min-width: 0;
+}
+
+.graphs iframe {
+    border: 0;
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+/* Narrow screens: controls on top, graphs below, the page scrolls normally */
+
+@media (max-width: 48rem) {
+    body {
+        display: block;
+        height: auto;
+        overflow: auto;
+    }
+
+    .sidebar,
+    body.sidebar-collapsed .sidebar {
+        border-bottom: 1px solid var(--line);
+        border-right: 0;
+        width: auto;
+    }
+
+    body.sidebar-collapsed .sidebar-toggle {
+        align-self: flex-end;
+        margin: 0.5rem 0.5rem 0.5rem 0;
+    }
+
+    body.sidebar-collapsed .toggle-label {
+        display: inline;
+    }
+
+    .graphs iframe {
+        height: 100vh;
     }
 }

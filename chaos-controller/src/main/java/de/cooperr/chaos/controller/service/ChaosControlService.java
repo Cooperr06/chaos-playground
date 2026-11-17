@@ -2,11 +2,13 @@ package de.cooperr.chaos.controller.service;
 
 import de.cooperr.chaos.controller.client.ChaosClient;
 import de.cooperr.chaos.controller.client.DockerClient;
+import de.cooperr.chaos.controller.client.LoadClient;
 import de.cooperr.chaos.controller.config.ChaosControllerProperties;
 import de.cooperr.chaos.controller.config.ChaosControllerProperties.ServiceTarget;
 import de.cooperr.chaos.controller.dto.ChaosSettings;
 import de.cooperr.chaos.controller.dto.ContainerAction;
 import de.cooperr.chaos.controller.dto.ContainerState;
+import de.cooperr.chaos.controller.dto.LoadSettings;
 import de.cooperr.chaos.controller.dto.ServiceStatus;
 import de.cooperr.chaos.controller.exception.ServiceNotFoundException;
 import de.cooperr.chaos.controller.exception.ServiceUnavailableException;
@@ -18,7 +20,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * Controls the configured services: their chaos settings and their containers.
+ * Controls the configured services (their chaos settings and their containers) and the load generator.
  */
 @Service
 public class ChaosControlService {
@@ -28,11 +30,14 @@ public class ChaosControlService {
     private final List<ServiceTarget> services;
     private final DockerClient dockerClient;
     private final ChaosClient chaosClient;
+    private final LoadClient loadClient;
 
-    public ChaosControlService(ChaosControllerProperties properties, DockerClient dockerClient, ChaosClient chaosClient) {
+    public ChaosControlService(ChaosControllerProperties properties, DockerClient dockerClient,
+                               ChaosClient chaosClient, LoadClient loadClient) {
         this.services = List.copyOf(properties.services());
         this.dockerClient = dockerClient;
         this.chaosClient = chaosClient;
+        this.loadClient = loadClient;
     }
 
     /**
@@ -55,6 +60,16 @@ public class ChaosControlService {
         dockerClient.perform(service.container(), action);
         log.info("Container changed: service={}, container={}, action={}", name, service.container(), action);
         return toStatus(service);
+    }
+
+    public LoadSettings getLoad() {
+        return loadClient.getSettings();
+    }
+
+    public LoadSettings updateLoad(LoadSettings settings) {
+        LoadSettings updatedSettings = loadClient.updateSettings(settings);
+        log.info("Load updated: ratePerSecond={}", updatedSettings.ratePerSecond());
+        return updatedSettings;
     }
 
     private ServiceTarget find(String name) {

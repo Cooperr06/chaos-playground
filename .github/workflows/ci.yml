@@ -70,10 +70,12 @@ jobs:
 
       - name: Wait for services
         run: |
-          for port in 8080 8081 8082 8083 8090 8091; do
+          for port in 8081 8082 8090 8091 9080 9083; do
             curl --silent --fail --retry 30 --retry-delay 2 --retry-all-errors \
               "http://localhost:$port/actuator/health"
           done
+          curl --silent --fail --retry 30 --retry-delay 2 --retry-all-errors localhost:9090/-/ready
+          curl --silent --fail --retry 30 --retry-delay 2 --retry-all-errors localhost:3000/grafana/api/health
 
       - name: Order for known product returns 201
         run: |
@@ -138,6 +140,44 @@ jobs:
           echo "$load"
           targets=$(echo "$load" | grep -o '"201":[1-9][0-9]*' | wc -l)
           [ "$targets" -eq 2 ] || { echo "expected orders with 201 for both shops, got $targets"; exit 1; }
+
+      - name: Prometheus scrapes all services
+        run: |
+          # the first scrape happens up to 5 seconds after Prometheus is ready
+          for attempt in $(seq 1 10); do
+            result=$(curl --silent --fail --get localhost:9090/api/v1/query --data-urlencode 'query=count(up == 1)')
+            echo "$result"
+            echo "$result" | grep -q '"value":\[[0-9.]*,"6"\]' && exit 0
+            sleep 2
+          done
+          echo "expected 6 services up"
+          exit 1
+
+      - name: Prometheus has order metrics for both shops
+        run: |
+          result=$(curl --silent --fail --get localhost:9090/api/v1/query \
+            --data-urlencode 'query=count(count by (target) (loadgenerator_orders_seconds_count))')
+          echo "$result"
+          echo "$result" | grep -q '"value":\[[0-9.]*,"2"\]' || { echo "expected order metrics for 2 shops"; exit 1; }
+
+      - name: Grafana serves the dashboard anonymously
+        run: |
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            localhost:3000/grafana/api/dashboards/uid/chaos-playground)
+          [ "$status" = 200 ] || { echo "expected 200, got $status"; exit 1; }
+
+      - name: Chaos controller sets load
+        run: |
+          curl --silent --fail --show-error --request POST localhost:8090/load \
+            --header 'Content-Type: application/json' \
+            --data '{"ratePerSecond":5}'
+          echo
+          load=$(curl --silent --fail localhost:8090/load)
+          curl --silent --fail --output /dev/null --request POST localhost:8090/load \
+            --header 'Content-Type: application/json' \
+            --data '{"ratePerSecond":0}'
+          echo "$load"
+          [ "$load" = '{"ratePerSecond":5}' ] || { echo "expected rate 5"; exit 1; }
 
       - name: Chaos controller sets chaos in payment
         run: |

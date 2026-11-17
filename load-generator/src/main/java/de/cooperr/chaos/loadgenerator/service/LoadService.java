@@ -4,6 +4,7 @@ import de.cooperr.chaos.loadgenerator.client.OrderClient;
 import de.cooperr.chaos.loadgenerator.config.LoadGeneratorProperties;
 import de.cooperr.chaos.loadgenerator.dto.LoadStatus;
 import de.cooperr.chaos.loadgenerator.dto.OrderResult;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class LoadService implements AutoCloseable {
 
     private final List<String> targetUrls;
     private final OrderClient orderClient;
+    private final OrderMetrics metrics;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService senders = Executors.newVirtualThreadPerTaskExecutor();
@@ -36,9 +38,10 @@ public class LoadService implements AutoCloseable {
     private volatile List<TargetCounter> counters;
     private ScheduledFuture<?> beat;
 
-    public LoadService(LoadGeneratorProperties properties, OrderClient orderClient) {
+    public LoadService(LoadGeneratorProperties properties, OrderClient orderClient, MeterRegistry registry) {
         this.targetUrls = List.copyOf(properties.targetUrls());
         this.orderClient = orderClient;
+        this.metrics = new OrderMetrics(registry, targetUrls);
         updateRate(properties.ratePerSecond());
     }
 
@@ -84,9 +87,11 @@ public class LoadService implements AutoCloseable {
     private void sendToAll(List<TargetCounter> counters) {
         for (TargetCounter counter : counters) {
             counter.recordSent();
+            metrics.recordSent(counter.url());
             senders.execute(() -> {
                 OrderResult result = orderClient.send(counter.url());
                 counter.record(result);
+                metrics.record(counter.url(), result);
                 log.debug("Order sent: url={}, result={}", counter.url(), result);
             });
         }

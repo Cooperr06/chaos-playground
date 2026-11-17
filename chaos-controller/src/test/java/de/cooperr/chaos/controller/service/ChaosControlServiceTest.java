@@ -2,11 +2,13 @@ package de.cooperr.chaos.controller.service;
 
 import de.cooperr.chaos.controller.client.ChaosClient;
 import de.cooperr.chaos.controller.client.DockerClient;
+import de.cooperr.chaos.controller.client.LoadClient;
 import de.cooperr.chaos.controller.config.ChaosControllerProperties;
 import de.cooperr.chaos.controller.config.ChaosControllerProperties.ServiceTarget;
 import de.cooperr.chaos.controller.dto.ChaosSettings;
 import de.cooperr.chaos.controller.dto.ContainerAction;
 import de.cooperr.chaos.controller.dto.ContainerState;
+import de.cooperr.chaos.controller.dto.LoadSettings;
 import de.cooperr.chaos.controller.dto.ServiceStatus;
 import de.cooperr.chaos.controller.exception.ServiceNotFoundException;
 import de.cooperr.chaos.controller.exception.ServiceUnavailableException;
@@ -30,14 +32,17 @@ class ChaosControlServiceTest {
 
     private DockerClient dockerClient;
     private ChaosClient chaosClient;
+    private LoadClient loadClient;
     private ChaosControlService service;
 
     @BeforeEach
     void setUp() {
         dockerClient = mock(DockerClient.class);
         chaosClient = mock(ChaosClient.class);
-        ChaosControllerProperties properties = new ChaosControllerProperties("http://socket-proxy:2375", List.of(PAYMENT, INVENTORY));
-        service = new ChaosControlService(properties, dockerClient, chaosClient);
+        loadClient = mock(LoadClient.class);
+        ChaosControllerProperties properties = new ChaosControllerProperties("http://socket-proxy:2375",
+                "http://load-generator:8091", "/grafana", List.of(PAYMENT, INVENTORY));
+        service = new ChaosControlService(properties, dockerClient, chaosClient, loadClient);
     }
 
     @Test
@@ -115,5 +120,15 @@ class ChaosControlServiceTest {
     void changeContainer_unknownService_throwsServiceNotFoundException() {
         assertThrows(ServiceNotFoundException.class, () -> service.changeContainer("shop-service", ContainerAction.STOP));
         verify(dockerClient, never()).perform(anyString(), any());
+    }
+
+    @Test
+    void updateLoad_validRate_returnsUpdatedRate() {
+        LoadSettings settings = new LoadSettings(10);
+
+        when(loadClient.updateSettings(settings)).thenReturn(settings);
+
+        assertEquals(settings, service.updateLoad(settings));
+        verify(loadClient).updateSettings(settings);
     }
 }

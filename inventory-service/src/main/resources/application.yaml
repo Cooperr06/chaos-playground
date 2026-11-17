@@ -13,3 +13,9 @@ inventory:
     watch-1: 1_000_000
     watch-2: 1_000_000
     strap-1: 50
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

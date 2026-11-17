@@ -9,50 +9,81 @@
     <script src="app.js" defer></script>
 </head>
 <body>
-<header class="page-header">
-    <h1>Chaos Playground</h1>
-    <p class="intro">
-        Ein kleiner Online-Shop aus mehreren Diensten. Hier lassen sich Zahlung und Lager gezielt stören:
-        Antworten verzögern, Fehler einstreuen oder den ganzen Dienst anhalten.
-    </p>
-</header>
+<aside id="sidebar" class="sidebar">
+    <button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-controls="sidebar-content" aria-expanded="true">
+        <span class="toggle-icon" aria-hidden="true"></span>
+        <span class="toggle-label">Steuerung ausblenden</span>
+    </button>
 
-<main>
-    <p id="message" class="message" role="alert" hidden></p>
-    <section id="services" class="services" aria-label="Dienste"></section>
+    <div id="sidebar-content" class="sidebar-content">
+        <header>
+            <h1>Chaos Playground</h1>
+            <p class="intro">
+                Zwei Shops bekommen dieselben Bestellungen, einer ohne und einer mit Schutz.
+                Stör Zahlung oder Lager und sieh rechts, wie beide reagieren.
+            </p>
+        </header>
+
+        <p id="message" class="message" role="alert" hidden></p>
+
+        <section class="block" aria-labelledby="load-title">
+            <h2 id="load-title">Bestellungen</h2>
+            <form id="load-form" class="load-form">
+                <label for="load-rate">Pro Sekunde, an jeden Shop</label>
+                <div class="load-controls">
+                    <input id="load-rate" name="ratePerSecond" type="range" min="0" max="100" step="1" value="0">
+                    <output id="load-value" for="load-rate">0</output>
+                    <button type="submit" class="primary">Übernehmen</button>
+                </div>
+                <p id="load-current" class="hint"></p>
+            </form>
+        </section>
+
+        <section class="block" aria-labelledby="services-title">
+            <h2 id="services-title">Dienste</h2>
+            <div id="services" class="services"></div>
+        </section>
+    </div>
+</aside>
+
+<main class="graphs">
+    <iframe id="graphs" title="Graphen aus Grafana"></iframe>
 </main>
 
 <template id="service-template">
     <article class="service">
         <header class="service-header">
             <span class="lamp" aria-hidden="true"></span>
-            <h2 class="service-name"></h2>
+            <h3 class="service-name"></h3>
             <span class="service-state"></span>
         </header>
 
+        <p class="chaos-current hint"></p>
+
         <form class="chaos">
-            <p class="chaos-current"></p>
-            <div class="fields">
-                <label>
-                    Verzögerung in ms
-                    <input class="latency" name="latencyMs" type="number" min="0" max="30000" step="100" value="0" required>
-                </label>
-                <label>
-                    Fehlerquote (0 bis 1)
-                    <input class="error-rate" name="errorRate" type="number" min="0" max="1" step="0.05" value="0" required>
-                </label>
-            </div>
+            <label>
+                Verzögerung (ms)
+                <input name="latencyMs" type="number" min="0" max="30000" step="1" value="0" required>
+            </label>
+            <label>
+                Fehlerquote (0 bis 1)
+                <input name="errorRate" type="number" min="0" max="1" step="any" value="0" required>
+            </label>
             <div class="buttons">
                 <button type="submit" class="primary">Chaos setzen</button>
-                <button type="button" class="reset">Chaos zurücksetzen</button>
+                <button type="button" class="reset">Zurücksetzen</button>
             </div>
         </form>
 
-        <div class="buttons container-actions">
-            <button type="button" data-action="stop">Stoppen</button>
-            <button type="button" data-action="start">Starten</button>
-            <button type="button" data-action="pause">Pausieren</button>
-            <button type="button" data-action="unpause">Fortsetzen</button>
+        <div class="container-actions">
+            <div class="buttons">
+                <button type="button" class="go" data-action="start">Starten</button>
+                <button type="button" class="stop" data-action="stop">Stoppen</button>
+            </div>
+            <div class="buttons">
+                <button type="button" class="go" data-action="unpause">Fortsetzen</button>
+                <button type="button" class="wait" data-action="pause">Pausieren</button>
+            </div>
         </div>
     </article>
 </template>

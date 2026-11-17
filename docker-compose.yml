@@ -1,5 +1,12 @@
 name: chaos-playground
 
+# Docker keeps container logs without limit, on the Pi they would grow for weeks: at most 2 files of 5 MB per container
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "2"
+
 services:
   payment-service:
     container_name: chaos-playground-payment
@@ -9,6 +16,7 @@ services:
     ports:
       - "127.0.0.1:8082:8082"
     restart: unless-stopped
+    logging: *logging
 
   inventory-service:
     container_name: chaos-playground-inventory
@@ -18,6 +26,7 @@ services:
     ports:
       - "127.0.0.1:8081:8081"
     restart: unless-stopped
+    logging: *logging
 
   shop-plain:
     container_name: chaos-playground-shop-plain
@@ -26,6 +35,7 @@ services:
       dockerfile: shop-service/Dockerfile
     ports:
       - "127.0.0.1:8080:8080"
+      - "127.0.0.1:9080:9080"
     environment:
       SHOP_INVENTORYURL: http://inventory-service:8081
       SHOP_PAYMENTURL: http://payment-service:8082
@@ -33,6 +43,7 @@ services:
       - inventory-service
       - payment-service
     restart: unless-stopped
+    logging: *logging
 
   shop-resilient:
     container_name: chaos-playground-shop-resilient
@@ -41,6 +52,7 @@ services:
       dockerfile: shop-service/Dockerfile
     ports:
       - "127.0.0.1:8083:8080"
+      - "127.0.0.1:9083:9080"
     environment:
       SHOP_INVENTORYURL: http://inventory-service:8081
       SHOP_PAYMENTURL: http://payment-service:8082
@@ -49,6 +61,7 @@ services:
       - inventory-service
       - payment-service
     restart: unless-stopped
+    logging: *logging
 
   load-generator:
     container_name: chaos-playground-load
@@ -64,6 +77,7 @@ services:
       - shop-plain
       - shop-resilient
     restart: unless-stopped
+    logging: *logging
 
   socket-proxy:
     container_name: chaos-playground-socket-proxy
@@ -83,6 +97,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
+    logging: *logging
 
   chaos-controller:
     container_name: chaos-playground-controller
@@ -93,6 +108,9 @@ services:
       - "127.0.0.1:8090:8090"
     environment:
       CHAOSCONTROLLER_DOCKERURL: http://socket-proxy:2375
+      CHAOSCONTROLLER_LOADGENERATORURL: http://load-generator:8091
+      # as seen by the browser, on the Pi the public path /grafana
+      CHAOSCONTROLLER_GRAFANAURL: ${GRAFANA_URL:-http://localhost:3000/grafana}
       CHAOSCONTROLLER_SERVICES_0_NAME: payment-service
       CHAOSCONTROLLER_SERVICES_0_CONTAINER: chaos-playground-payment
       CHAOSCONTROLLER_SERVICES_0_URL: http://payment-service:8082
@@ -103,4 +121,56 @@ services:
       - socket-proxy
       - payment-service
       - inventory-service
+      - load-generator
     restart: unless-stopped
+    logging: *logging
+
+  prometheus:
+    container_name: chaos-playground-prometheus
+    image: prom/prometheus:v3.15.1
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=1d'
+      - '--storage.tsdb.retention.size=200MB'
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    # data in memory only: empty on every start, nothing left on disk, spares the SD card of the Pi
+    tmpfs:
+      # the image runs as nobody (65534), a tmpfs belongs to root by default
+      - /prometheus:size=256m,uid=65534,gid=65534
+    restart: unless-stopped
+    logging: *logging
+
+  grafana:
+    container_name: chaos-playground-grafana
+    image: grafana/grafana:13.2.5
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000/grafana/}
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      # read-only for everyone, nothing to administrate: data source and dashboard come from files
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_AUTH_BASIC_ENABLED: "false"
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_USERS_DEFAULT_THEME: light
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+    # Grafana's own database in memory only: data source and dashboard come from the files above on every start
+    tmpfs:
+      # exec: the Prometheus data source is a plugin binary below /var/lib/grafana/plugins, tmpfs forbids running it by default
+      - /var/lib/grafana:exec
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    logging: *logging

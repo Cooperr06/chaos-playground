@@ -6,6 +6,7 @@ import de.cooperr.chaos.loadgenerator.dto.LoadStatus;
 import de.cooperr.chaos.loadgenerator.dto.OrderOutcome;
 import de.cooperr.chaos.loadgenerator.dto.OrderResult;
 import de.cooperr.chaos.loadgenerator.dto.TargetStatus;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,13 +26,15 @@ class LoadServiceTest {
     private static final OrderResult CREATED = new OrderResult(OrderOutcome.RESPONSE, 201, Duration.ofMillis(5));
 
     private OrderClient orderClient;
+    private SimpleMeterRegistry registry;
     private LoadService service;
 
     @BeforeEach
     void setUp() {
         orderClient = mock(OrderClient.class);
         when(orderClient.send(anyString())).thenReturn(CREATED);
-        service = new LoadService(new LoadGeneratorProperties(List.of(URL), 0, Duration.ofSeconds(1)), orderClient);
+        registry = new SimpleMeterRegistry();
+        service = new LoadService(new LoadGeneratorProperties(List.of(URL), 0, Duration.ofSeconds(1)), orderClient, registry);
     }
 
     @AfterEach
@@ -98,5 +101,17 @@ class LoadServiceTest {
 
         assertEquals(10, status.ratePerSecond());
         assertEquals(0, status.targets().getFirst().sent());
+    }
+
+    @Test
+    void updateRate_newRate_keepsMetrics() {
+        service.updateRate(20);
+        await().atMost(Duration.ofSeconds(2))
+                .until(() -> service.getStatus().targets().getFirst().statusCounts().getOrDefault(201, 0L) >= 5);
+
+        service.updateRate(0);
+
+        long orders = registry.get(OrderMetrics.ORDERS).tag("target", "shop-service").tag("result", "201").timer().count();
+        assertTrue(orders >= 5);
     }
 }

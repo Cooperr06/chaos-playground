@@ -7,11 +7,14 @@ import java.util.List;
 /**
  * Settings of the chaos controller.
  *
- * @param dockerUrl the base URL of the Docker API, e.g. {@code http://socket-proxy:2375}
- * @param services  the services that can be controlled, nothing else can be reached through the endpoints
+ * @param dockerUrl        the base URL of the Docker API, e.g. {@code http://socket-proxy:2375}
+ * @param loadGeneratorUrl the base URL of the load generator, e.g. {@code http://load-generator:8091}
+ * @param grafanaUrl       the URL of Grafana as seen by the browser, e.g. {@code /grafana}
+ * @param services         the services that can be controlled, nothing else can be reached through the endpoints
  */
 @ConfigurationProperties("chaos-controller")
-public record ChaosControllerProperties(String dockerUrl, List<ServiceTarget> services) {
+public record ChaosControllerProperties(String dockerUrl, String loadGeneratorUrl, String grafanaUrl,
+                                        List<ServiceTarget> services) {
 
     /**
      * One service that can be controlled.

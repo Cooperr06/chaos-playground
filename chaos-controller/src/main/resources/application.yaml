@@ -4,12 +4,22 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+  web:
+    resources:
+      # the files in the jar all carry the same date, so the browser could not tell an old app.css from a new one:
+      # no date, and the browser loads index.html, app.css and app.js anew each time
+      cache:
+        use-last-modified: false
+        cachecontrol:
+          no-cache: true
 
 server:
   port: 8090
 
 chaos-controller:
   docker-url: http://localhost:2375
+  load-generator-url: http://localhost:8091
+  grafana-url: http://localhost:3000/grafana
   services:
     - name: payment-service
       container: chaos-playground-payment
@@ -17,3 +27,9 @@ chaos-controller:
     - name: inventory-service
       container: chaos-playground-inventory
       url: http://localhost:8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

@@ -20,7 +20,7 @@ Ein kleiner Online-Shop aus mehreren Spring-Boot-Diensten. Ein Chaos-Controller 
    | (Knoepfe im UI)   |       +-------------+  verlangsamt Container
    +-------------------+
 
-   Dashboard: Erfolgsrate, Latenz, Zustand der Circuit Breaker (live)
+   Dashboard: Erfolgsrate, Latenz, Zustand der Circuit Breaker (Prometheus, Grafana)
 ```
 
 ## Module
@@ -30,7 +30,7 @@ Ein kleiner Online-Shop aus mehreren Spring-Boot-Diensten. Ein Chaos-Controller 
 | `shop-service` | Nimmt Bestellungen an, ruft Lager und Zahlung auf, enthält die Resilienz-Muster |
 | `inventory-service` | Lagerbestand, läuft später in zwei Instanzen |
 | `payment-service` | Zahlung |
-| `chaos-controller` | Steuert das Chaos (Docker-API und Chaos-Endpunkte der Dienste), später mit Dashboard |
+| `chaos-controller` | Steuert das Chaos (Docker-API und Chaos-Endpunkte der Dienste) und die Last, bettet die Graphen aus Grafana ein |
 | `load-generator` | Schickt dauerhaft Bestellungen an den Shop, z. B. 10 pro Sekunde |
 
 Jeder Dienst ist eine eigene Spring-Boot-App in einem eigenen Container, gestartet mit Docker Compose.
@@ -49,7 +49,7 @@ Chaos entsteht über zwei Wege: Ausfall per Docker-API (Container stoppen oder p
 - Spring Boot (Version von start.spring.io bzw. IntelliJ beim Anlegen), Maven
 - Resilience4j für Circuit Breaker, Retry, Timeout
 - Actuator und Micrometer für Metriken und Breaker-Zustände
-- Server-Sent Events für das Live-Dashboard
+- Prometheus sammelt die Metriken, Grafana zeigt sie als Dashboard (`docs/dashboard.md`)
 - Docker Compose
 - Nginx Proxy Manager für `chaosplayground.cooperr.de` auf dem Raspberry Pi
 - GitHub Actions für die CI-Pipeline
@@ -61,12 +61,12 @@ docker compose up --build
 docker compose down
 ```
 
-Shop ohne Resilienz, Lager, Zahlung, Shop mit Resilienz, Chaos-Controller und Lastgenerator laufen dann auf `127.0.0.1:8080`, `8081`, `8082`, `8083`, `8090` und `8091`. Die Oberfläche des Chaos-Controllers liegt unter `http://localhost:8090`. Mit `-d` startet alles im Hintergrund.
+Shop ohne Resilienz, Lager, Zahlung, Shop mit Resilienz, Chaos-Controller und Lastgenerator laufen dann auf `127.0.0.1:8080`, `8081`, `8082`, `8083`, `8090` und `8091`. Actuator der beiden Shops liegt auf `9080` und `9083`. Die Oberfläche des Chaos-Controllers liegt unter `http://localhost:8090`, Grafana unter `http://localhost:3000/grafana` und Prometheus unter `http://localhost:9090`. Mit `-d` startet alles im Hintergrund.
 
 ## Plan
 
-- **Fertig:** `payment-service`, `inventory-service` und `shop-service` mit Tests, Dockerfiles, Docker Compose, CI-Pipeline mit Images auf `ghcr.io` und Smoke-Test, Chaos-Endpunkt in Zahlung und Lager, Lastgenerator, Chaos-Controller mit Oberfläche und Docker-Zugriff über einen Socket-Proxy. Szenario 1 (Timeout, Circuit Breaker und Fallback, zwei Shops nebeneinander, `docs/scenario-1.md`).
-- **Als Nächstes:** Live-Dashboard.
+- **Fertig:** `payment-service`, `inventory-service` und `shop-service` mit Tests, Dockerfiles, Docker Compose, CI-Pipeline mit Images auf `ghcr.io` und Smoke-Test, Chaos-Endpunkt in Zahlung und Lager, Lastgenerator, Chaos-Controller mit Oberfläche und Docker-Zugriff über einen Socket-Proxy, Dashboard mit Prometheus und Grafana. Szenario 1 (Timeout, Circuit Breaker und Fallback, zwei Shops nebeneinander, `docs/scenario-1.md`).
+- **Als Nächstes:** Zugang mit Login, dann Betrieb auf dem Pi.
 - **Danach:** Szenarien 2 bis 4.
 - **Zugang:** Das Dashboard bekommt zwei Logins, `viewer` (nur ansehen) und `admin` (zusätzlich Chaos-Knöpfe), damit Gäste die Demo selbst ausprobieren können.
 

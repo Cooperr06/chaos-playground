@@ -28,6 +28,9 @@ const ALLOWED_ACTIONS = {
     UNKNOWN: ['stop', 'start', 'pause', 'unpause'],
 };
 
+// kiosk hides the Grafana menu and search, the time range and refresh controls stay
+const DASHBOARD_PATH = '/d/chaos-playground/chaos-playground?orgId=1&refresh=5s&from=now-15m&to=now&theme=light&kiosk';
+
 const servicesElement = document.getElementById('services');
 const messageElement = document.getElementById('message');
 const template = document.getElementById('service-template');
@@ -114,14 +117,79 @@ function render(service) {
         button.disabled = !allowed.includes(button.dataset.action));
 }
 
+const loadForm = document.getElementById('load-form');
+const loadRate = document.getElementById('load-rate');
+const loadValue = document.getElementById('load-value');
+const loadCurrent = document.getElementById('load-current');
+
+loadRate.addEventListener('input', () => loadValue.textContent = loadRate.value);
+loadForm.addEventListener('submit', event => {
+    event.preventDefault();
+    run(() => request('POST', '/load', {ratePerSecond: Number(loadRate.value)}));
+});
+
+function renderLoad(load) {
+    loadCurrent.textContent = load.ratePerSecond === 0
+        ? 'Aktuell: keine Bestellungen, die Graphen bleiben leer.'
+        : `Aktuell: ${load.ratePerSecond} pro Sekunde.`;
+    if (!loadForm.dataset.filled) {
+        loadRate.value = load.ratePerSecond;
+        loadValue.textContent = load.ratePerSecond;
+        loadForm.dataset.filled = 'true';
+    }
+}
+
 async function refresh() {
+    // independent requests: an unreachable load generator must not hide the services
+    const [services, load] = await Promise.allSettled([request('GET', '/services'), request('GET', '/load')]);
+    if (services.status === 'fulfilled') {
+        services.value.forEach(render);
+    }
+    if (load.status === 'fulfilled') {
+        renderLoad(load.value);
+    }
+    const failed = [services, load].find(result => result.status === 'rejected');
+    if (failed) {
+        showMessage(failed.reason.message);
+    }
+}
+
+async function showGraphs() {
     try {
-        const services = await request('GET', '/services');
-        services.forEach(render);
+        const config = await request('GET', '/config');
+        document.getElementById('graphs').src = `${config.grafanaUrl}${DASHBOARD_PATH}`;
     } catch (e) {
         showMessage(e.message);
     }
 }
 
+const SIDEBAR_KEY = 'chaos-playground.sidebar-collapsed';
+const sidebarToggle = document.getElementById('sidebar-toggle');
+
+function setSidebarCollapsed(collapsed) {
+    document.body.classList.toggle('sidebar-collapsed', collapsed);
+    sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+    sidebarToggle.querySelector('.toggle-label').textContent = collapsed ? 'Steuerung einblenden' : 'Steuerung ausblenden';
+    sidebarToggle.title = collapsed ? 'Steuerung einblenden' : '';
+    try {
+        localStorage.setItem(SIDEBAR_KEY, String(collapsed));
+    } catch {
+        // storage blocked, e.g. in a private window: the sidebar just opens expanded next time
+    }
+}
+
+function storedSidebarCollapsed() {
+    try {
+        return localStorage.getItem(SIDEBAR_KEY) === 'true';
+    } catch {
+        return false;
+    }
+}
+
+sidebarToggle.addEventListener('click', () =>
+    setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed')));
+setSidebarCollapsed(storedSidebarCollapsed());
+
+showGraphs();
 refresh();
 setInterval(refresh, REFRESH_INTERVAL_MS);

@@ -2,7 +2,7 @@
 
 Der `payment-service` antwortet mit 5 Sekunden Latenz. Zwei Shops aus demselben Image laufen nebeneinander und bekommen vom Lastgenerator dieselbe Last:
 
-- `shop-plain` ohne Schutz: Jede Bestellung blockiert einen Thread, bis die Zahlung antwortet. Bei 10 Bestellungen pro Sekunde und 5 Sekunden Latenz hängen etwa 50 Anfragen gleichzeitig, der Thread-Pool hat 20. Nach rund 2 Sekunden sind alle Threads belegt, danach hängt auch `/actuator/health`, obwohl es mit der Zahlung nichts zu tun hat (Kaskadenfehler).
+- `shop-plain` ohne Schutz: Jede Bestellung blockiert einen Thread, bis die Zahlung antwortet. Bei 10 Bestellungen pro Sekunde und 5 Sekunden Latenz hängen etwa 50 Anfragen gleichzeitig, der Thread-Pool hat 20. Nach rund 2 Sekunden sind alle Threads belegt, danach hängt auch jede andere Anfrage an den Shop, obwohl sie mit der Zahlung nichts zu tun hat (Kaskadenfehler). Seit dem Dashboard (`docs/dashboard.md`) läuft Actuator im Shop auf einem eigenen Port (9080) mit eigenen Threads, damit Prometheus die vollen Threads noch messen kann. `/actuator/health` hängt deshalb nicht mehr mit.
 - `shop-resilient` mit Timeout und Circuit Breaker: Ein Aufruf der Zahlung bricht nach 1 Sekunde ab. Nach genug Fehlschlägen öffnet der Breaker, ab dann ruft der Shop die Zahlung gar nicht mehr auf und antwortet sofort mit dem Fallback "Zahlung wird nachgeholt". Bei 10 pro Sekunde und höchstens 1 Sekunde Wartezeit sind höchstens etwa 10 Threads belegt, der Pool reicht.
 
 Nach dem Entfernen der Latenz geht der Breaker nach der Wartezeit in HALF_OPEN, lässt einige Probeaufrufe durch und schließt wieder (CLOSED).
@@ -77,11 +77,9 @@ docker compose up --build -d
 curl -s -X POST localhost:8091/load -H 'Content-Type: application/json' -d '{"ratePerSecond":10}'
 curl -s -X POST localhost:8082/chaos -H 'Content-Type: application/json' -d '{"latencyMs":5000,"errorRate":0}'
 curl -s localhost:8091/load
-time curl -s localhost:8080/actuator/health
-time curl -s localhost:8083/actuator/health
-curl -s localhost:8083/actuator/circuitbreakers
+curl -s localhost:9083/actuator/circuitbreakers
 curl -s -X POST localhost:8082/chaos -H 'Content-Type: application/json' -d '{"latencyMs":0,"errorRate":0}'
-curl -s localhost:8083/actuator/circuitbreakers
+curl -s localhost:9083/actuator/circuitbreakers
 curl -s -X POST localhost:8091/load -H 'Content-Type: application/json' -d '{"ratePerSecond":0}'
 docker compose down
 ```
@@ -89,8 +87,8 @@ docker compose down
 Erwartet, einige Sekunden nach dem Setzen der Latenz:
 
 - `GET /load`: Beim Ziel `shop-plain` steigt `inFlight` stark, nach 10 Sekunden kommen `timeouts` dazu. Beim Ziel `shop-resilient` bleibt `inFlight` klein, `statusCounts` zählt `202`, die Antwortzeit liegt bei wenigen Millisekunden.
-- `/actuator/health`: auf 8080 sehr langsam oder gar keine Antwort, auf 8083 sofort.
-- `/actuator/circuitbreakers` auf 8083: `OPEN`. Nach dem Zurücksetzen der Latenz und 10 Sekunden `HALF_OPEN`, nach 3 erfolgreichen Probeaufrufen `CLOSED`. `statusCounts` zählt wieder `201`.
+- Im Dashboard unter `http://localhost:8090`: "Belegte Threads" beim Shop ohne Schutz bei 20, beim Shop mit Schutz niedrig.
+- `/actuator/circuitbreakers` auf 9083 (Management-Port von `shop-resilient`): `OPEN`. Nach dem Zurücksetzen der Latenz und 10 Sekunden `HALF_OPEN`, nach 3 erfolgreichen Probeaufrufen `CLOSED`. `statusCounts` zählt wieder `201`.
 
 ## Nicht Teil dieser Aufgabe
 

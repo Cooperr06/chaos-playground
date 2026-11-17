@@ -13,3 +13,9 @@ load-generator:
     - http://localhost:8080
   rate-per-second: 0
   timeout: 10s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
