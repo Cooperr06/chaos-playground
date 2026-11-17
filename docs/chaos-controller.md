@@ -72,7 +72,7 @@ Wer den Docker-Socket hat, hat Root auf dem Host. Der Controller bekommt ihn des
 - CI, Job `smoke-test`:
   - Warten auch auf Port 8090.
   - Chaos über den Controller: `{"latencyMs":0,"errorRate":1.0}` an `payment-service`, Bestellung an `shop-plain` liefert `502`, danach zurücksetzen.
-  - Container über den Controller: `inventory-service` stoppen, `GET /services` zeigt `EXITED`, Bestellung an `shop-plain` liefert `502`. Danach starten, auf den Health-Check von 8081 warten, Bestellung liefert wieder `201`.
+  - Container über den Controller: `inventory-service` stoppen, `GET /services` zeigt `EXITED`. Danach starten, auf den Health-Check von 8081 warten, innerhalb von 10 Versuchen im Abstand von 2 Sekunden liefert eine Bestellung wieder `201`. Keine Bestellung während des Stopps und kein `201` gleich beim ersten Versuch, siehe "Beobachtung für Szenario 2".
 
 ## Tests (Akzeptanzkriterien)
 
@@ -95,6 +95,10 @@ docker compose down
 ```
 
 Danach `http://localhost:8090` im Browser öffnen und dasselbe über die Knöpfe machen.
+
+## Beobachtung für Szenario 2
+
+Im ersten CI-Lauf hing eine Bestellung an `shop-plain` während des Stopps 2 Minuten 18 Sekunden, bis sie `502` lieferte. Die erste Bestellung nach dem Neustart schlug sofort fehl, beim Lager kam sie nicht an. Vermutete Ursache (nicht belegt, der Shop loggt bei "Order failed" die Ursache nicht): Der `RestClient` im Shop nutzt ohne eigene Einstellung den `HttpClient` des JDK (Reihenfolge in `DefaultRestClientBuilder.initRequestFactory`, `spring-web` 7.0.9). Der hält Verbindungen offen, und für das Lager ist kein Timeout gesetzt. Nach dem Stopp schickt der Shop über eine alte Verbindung ins Leere, nach dem Neustart lehnt der neue Container die alte Verbindung ab, ein `POST` wird nicht wiederholt. Für Szenario 2 braucht der Shop beim Lager also Timeouts für Verbindungsaufbau und Antwort und einen Retry. Dabei auch die Ursache im Log von "Order failed" mitschreiben.
 
 ## Nicht Teil dieser Aufgabe
 

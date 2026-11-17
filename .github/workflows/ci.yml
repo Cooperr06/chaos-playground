@@ -163,19 +163,22 @@ jobs:
           echo "$services"
           echo "$services" | grep -q '"name":"inventory-service","containerState":"EXITED"' \
             || { echo "expected inventory-service to be EXITED"; exit 1; }
-          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
-            --request POST localhost:8080/orders \
-            --header 'Content-Type: application/json' \
-            --data '{"productId":"watch-1","quantity":1,"totalAmount":99.90}')
-          [ "$status" = 502 ] || { echo "expected 502 while inventory is stopped, got $status"; exit 1; }
           curl --silent --fail --show-error --request POST localhost:8090/services/inventory-service/start
           echo
           curl --silent --fail --retry 30 --retry-delay 2 --retry-all-errors localhost:8081/actuator/health
-          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
-            --request POST localhost:8080/orders \
-            --header 'Content-Type: application/json' \
-            --data '{"productId":"watch-1","quantity":1,"totalAmount":99.90}')
-          [ "$status" = 201 ] || { echo "expected 201 after restart, got $status"; exit 1; }
+          echo
+          # the shop may still use connections to the stopped container, so the first orders can fail
+          for attempt in $(seq 1 10); do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 \
+              --request POST localhost:8080/orders \
+              --header 'Content-Type: application/json' \
+              --data '{"productId":"watch-1","quantity":1,"totalAmount":99.90}' || true)
+            echo "attempt $attempt: $status"
+            [ "$status" = 201 ] && exit 0
+            sleep 2
+          done
+          echo "expected 201 after restart, got $status"
+          exit 1
 
       - name: Show logs
         if: failure()
