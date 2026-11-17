@@ -64,3 +64,43 @@ services:
       - shop-plain
       - shop-resilient
     restart: unless-stopped
+
+  socket-proxy:
+    container_name: chaos-playground-socket-proxy
+    image: wollomatic/socket-proxy:1.13.2
+    # the image does not run as root, it needs the group that owns the Docker socket
+    user: "65534:${DOCKER_GID:-0}"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    command:
+      - '-listenip=0.0.0.0'
+      - '-allowfrom=chaos-controller'
+      - '-allowGET=/containers/chaos-playground-(payment|inventory)/json'
+      - '-allowPOST=/containers/chaos-playground-(payment|inventory)/(start|stop|pause|unpause)'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+  chaos-controller:
+    container_name: chaos-playground-controller
+    build:
+      context: .
+      dockerfile: chaos-controller/Dockerfile
+    ports:
+      - "127.0.0.1:8090:8090"
+    environment:
+      CHAOSCONTROLLER_DOCKERURL: http://socket-proxy:2375
+      CHAOSCONTROLLER_SERVICES_0_NAME: payment-service
+      CHAOSCONTROLLER_SERVICES_0_CONTAINER: chaos-playground-payment
+      CHAOSCONTROLLER_SERVICES_0_URL: http://payment-service:8082
+      CHAOSCONTROLLER_SERVICES_1_NAME: inventory-service
+      CHAOSCONTROLLER_SERVICES_1_CONTAINER: chaos-playground-inventory
+      CHAOSCONTROLLER_SERVICES_1_URL: http://inventory-service:8081
+    depends_on:
+      - socket-proxy
+      - payment-service
+      - inventory-service
+    restart: unless-stopped

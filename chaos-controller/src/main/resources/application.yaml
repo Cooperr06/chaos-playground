@@ -1,3 +1,19 @@
 spring:
   application:
     name: chaos-controller
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: 8090
+
+chaos-controller:
+  docker-url: http://localhost:2375
+  services:
+    - name: payment-service
+      container: chaos-playground-payment
+      url: http://localhost:8082
+    - name: inventory-service
+      container: chaos-playground-inventory
+      url: http://localhost:8081

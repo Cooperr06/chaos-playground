@@ -22,7 +22,7 @@ Ein kleiner Online-Shop aus mehreren Spring-Boot-Diensten, der gezielt sabotiert
 - `totalAmount` ist der Gesamtbetrag einer Bestellung (im Shop und im `payment-service`). Der Shop hat keine Preisliste, der Aufrufer gibt den Betrag mit.
 - Der Shop wird zuerst ohne Resilienz gebaut, Resilience4j kommt mit Szenario 1. `ServiceClient.call` ist dafür die zentrale Stelle. Für Szenario 1 laufen zwei Instanzen desselben Shops nebeneinander (`shop-plain`, `shop-resilient`, Property `shop.resilience-enabled`), der Lastgenerator schickt dieselbe Last an beide.
 - Betrieb (geplant): Die Demo läuft unter `chaosplayground.cooperr.de` auf dem Pi, davor der Nginx Proxy Manager (TLS dort). Öffentlich erreichbar ist nur der `chaos-controller`, die anderen Dienste bleiben im Docker-Netz.
-- Zugang zum Dashboard (geplant): Spring Security mit zwei festen Logins, Formular und Session. `viewer` sieht das Dashboard, `admin` darf zusätzlich die Chaos-Knöpfe bedienen (serverseitig geprüft). Passwörter als BCrypt-Hash per Umgebungsvariable, nicht im Repo. Docker-Zugriff des Controllers nur über einen Socket-Proxy mit Start, Stop und Pause der Projekt-Container, ob ein arm64-Image existiert, ist noch zu prüfen.
+- Zugang zum Dashboard (geplant): Spring Security mit zwei festen Logins, Formular und Session. `viewer` sieht das Dashboard, `admin` darf zusätzlich die Chaos-Knöpfe bedienen (serverseitig geprüft). Passwörter als BCrypt-Hash per Umgebungsvariable, nicht im Repo. Docker-Zugriff des Controllers nur über den Socket-Proxy `wollomatic/socket-proxy` (arm64 vorhanden), mit Erlaubnisliste nur für die Container von Zahlung und Lager.
 
 ## Arbeitsweise
 

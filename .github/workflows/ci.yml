@@ -35,7 +35,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        module: [shop-service, inventory-service, payment-service, load-generator]
+        module: [shop-service, inventory-service, payment-service, load-generator, chaos-controller]
     steps:
       - uses: actions/checkout@v7
 
@@ -66,11 +66,11 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Start services
-        run: docker compose up --build -d
+        run: DOCKER_GID=$(stat -c %g /var/run/docker.sock) docker compose up --build -d
 
       - name: Wait for services
         run: |
-          for port in 8080 8081 8082 8083 8091; do
+          for port in 8080 8081 8082 8083 8090 8091; do
             curl --silent --fail --retry 30 --retry-delay 2 --retry-all-errors \
               "http://localhost:$port/actuator/health"
           done
@@ -138,6 +138,44 @@ jobs:
           echo "$load"
           targets=$(echo "$load" | grep -o '"201":[1-9][0-9]*' | wc -l)
           [ "$targets" -eq 2 ] || { echo "expected orders with 201 for both shops, got $targets"; exit 1; }
+
+      - name: Chaos controller sets chaos in payment
+        run: |
+          curl --silent --fail --output /dev/null \
+            --request POST localhost:8090/services/payment-service/chaos \
+            --header 'Content-Type: application/json' \
+            --data '{"latencyMs":0,"errorRate":1.0}'
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --request POST localhost:8080/orders \
+            --header 'Content-Type: application/json' \
+            --data '{"productId":"watch-1","quantity":1,"totalAmount":99.90}')
+          curl --silent --fail --output /dev/null \
+            --request POST localhost:8090/services/payment-service/chaos \
+            --header 'Content-Type: application/json' \
+            --data '{"latencyMs":0,"errorRate":0}'
+          [ "$status" = 502 ] || { echo "expected 502, got $status"; exit 1; }
+
+      - name: Chaos controller stops and starts inventory
+        run: |
+          curl --silent --fail --show-error --request POST localhost:8090/services/inventory-service/stop
+          echo
+          services=$(curl --silent --fail localhost:8090/services)
+          echo "$services"
+          echo "$services" | grep -q '"name":"inventory-service","containerState":"EXITED"' \
+            || { echo "expected inventory-service to be EXITED"; exit 1; }
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --request POST localhost:8080/orders \
+            --header 'Content-Type: application/json' \
+            --data '{"productId":"watch-1","quantity":1,"totalAmount":99.90}')
+          [ "$status" = 502 ] || { echo "expected 502 while inventory is stopped, got $status"; exit 1; }
+          curl --silent --fail --show-error --request POST localhost:8090/services/inventory-service/start
+          echo
+          curl --silent --fail --retry 30 --retry-delay 2 --retry-all-errors localhost:8081/actuator/health
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --request POST localhost:8080/orders \
+            --header 'Content-Type: application/json' \
+            --data '{"productId":"watch-1","quantity":1,"totalAmount":99.90}')
+          [ "$status" = 201 ] || { echo "expected 201 after restart, got $status"; exit 1; }
 
       - name: Show logs
         if: failure()

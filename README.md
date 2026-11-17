@@ -61,12 +61,12 @@ docker compose up --build
 docker compose down
 ```
 
-Shop ohne Resilienz, Lager, Zahlung, Shop mit Resilienz und Lastgenerator laufen dann auf `127.0.0.1:8080`, `8081`, `8082`, `8083` und `8091`. Mit `-d` startet alles im Hintergrund.
+Shop ohne Resilienz, Lager, Zahlung, Shop mit Resilienz, Chaos-Controller und Lastgenerator laufen dann auf `127.0.0.1:8080`, `8081`, `8082`, `8083`, `8090` und `8091`. Die Oberfläche des Chaos-Controllers liegt unter `http://localhost:8090`. Mit `-d` startet alles im Hintergrund.
 
 ## Plan
 
-- **Fertig:** `payment-service`, `inventory-service` und `shop-service` mit Tests, Dockerfiles, Docker Compose, CI-Pipeline mit Images auf `ghcr.io` und Smoke-Test, Chaos-Endpunkt in Zahlung und Lager, Lastgenerator. Szenario 1 (Timeout, Circuit Breaker und Fallback, zwei Shops nebeneinander, `docs/scenario-1.md`).
-- **Als Nächstes:** Chaos-Controller mit Weboberfläche, Live-Dashboard.
+- **Fertig:** `payment-service`, `inventory-service` und `shop-service` mit Tests, Dockerfiles, Docker Compose, CI-Pipeline mit Images auf `ghcr.io` und Smoke-Test, Chaos-Endpunkt in Zahlung und Lager, Lastgenerator, Chaos-Controller mit Oberfläche und Docker-Zugriff über einen Socket-Proxy. Szenario 1 (Timeout, Circuit Breaker und Fallback, zwei Shops nebeneinander, `docs/scenario-1.md`).
+- **Als Nächstes:** Live-Dashboard.
 - **Danach:** Szenarien 2 bis 4.
 - **Zugang:** Das Dashboard bekommt zwei Logins, `viewer` (nur ansehen) und `admin` (zusätzlich Chaos-Knöpfe), damit Gäste die Demo selbst ausprobieren können.
 
