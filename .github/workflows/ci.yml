@@ -180,10 +180,16 @@ jobs:
 
       - name: Prometheus has order metrics for both shops
         run: |
-          result=$(curl --silent --fail --get localhost:9090/api/v1/query \
-            --data-urlencode 'query=count(count by (target) (loadgenerator_orders_seconds_count))')
-          echo "$result"
-          echo "$result" | grep -q '"value":\[[0-9.]*,"2"\]' || { echo "expected order metrics for 2 shops"; exit 1; }
+          # Prometheus scrapes every 5 seconds, the orders of the step before may not be scraped yet
+          for attempt in $(seq 1 10); do
+            result=$(curl --silent --fail --get localhost:9090/api/v1/query \
+              --data-urlencode 'query=count(count by (target) (loadgenerator_orders_seconds_count))')
+            echo "$result"
+            echo "$result" | grep -q '"value":\[[0-9.]*,"2"\]' && exit 0
+            sleep 2
+          done
+          echo "expected order metrics for 2 shops"
+          exit 1
 
       - name: Grafana serves the dashboard anonymously
         run: |
