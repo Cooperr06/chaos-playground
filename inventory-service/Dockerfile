@@ -6,8 +6,10 @@ COPY inventory-service/pom.xml inventory-service/
 COPY payment-service/pom.xml payment-service/
 COPY chaos-controller/pom.xml chaos-controller/
 COPY load-generator/pom.xml load-generator/
+# dependencies in their own layer: it only depends on the poms, so the CI layer cache (type=gha) keeps it
+RUN mvn -B -q -pl inventory-service -am dependency:go-offline
 COPY inventory-service/src inventory-service/src
-RUN --mount=type=cache,target=/root/.m2 mvn -B -pl inventory-service -am -Dmaven.test.skip=true package
+RUN mvn -B -pl inventory-service -am -Dmaven.test.skip=true package
 
 FROM eclipse-temurin:25-jre-alpine
 RUN adduser -D -H app

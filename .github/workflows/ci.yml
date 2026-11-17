@@ -65,8 +65,33 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: docker/setup-buildx-action@v4
+
+      # Builds the images from docker-compose.yml, but with the layers the images job keeps in the GitHub cache
+      # (same scope per module), so Maven only downloads when a pom changes. The tags are the names docker compose
+      # would give the images, so "up" below starts them without building again.
+      - name: Build images
+        uses: docker/bake-action@v7
+        with:
+          source: .
+          files: docker-compose.yml
+          load: true
+          set: |
+            payment-service.cache-from=type=gha,scope=payment-service
+            inventory-service.cache-from=type=gha,scope=inventory-service
+            shop-plain.cache-from=type=gha,scope=shop-service
+            shop-resilient.cache-from=type=gha,scope=shop-service
+            load-generator.cache-from=type=gha,scope=load-generator
+            chaos-controller.cache-from=type=gha,scope=chaos-controller
+            payment-service.tags=chaos-playground-payment-service
+            inventory-service.tags=chaos-playground-inventory-service
+            shop-plain.tags=chaos-playground-shop-plain
+            shop-resilient.tags=chaos-playground-shop-resilient
+            load-generator.tags=chaos-playground-load-generator
+            chaos-controller.tags=chaos-playground-chaos-controller
+
       - name: Start services
-        run: DOCKER_GID=$(stat -c %g /var/run/docker.sock) docker compose up --build -d
+        run: DOCKER_GID=$(stat -c %g /var/run/docker.sock) docker compose up -d
 
       - name: Wait for services
         run: |
