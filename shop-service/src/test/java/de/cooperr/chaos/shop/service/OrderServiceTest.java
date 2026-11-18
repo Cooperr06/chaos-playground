@@ -7,7 +7,6 @@ import de.cooperr.chaos.shop.dto.OrderRequest;
 import de.cooperr.chaos.shop.dto.OrderResponse;
 import de.cooperr.chaos.shop.dto.OrderStatus;
 import de.cooperr.chaos.shop.exception.DownstreamServiceException;
-import de.cooperr.chaos.shop.exception.InsufficientStockException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,18 +66,6 @@ class OrderServiceTest {
                 () -> assertEquals(OrderStatus.CONFIRMED, response.status())
         );
         verify(paymentClient).pay(response.orderId(), totalAmount);
-    }
-
-    @Test
-    void placeOrder_insufficientStock_throwsInsufficientStockExceptionAndSkipsPayment() {
-        String productId = "a";
-        int quantity = 60;
-        OrderRequest request = new OrderRequest(productId, quantity, new BigDecimal("99.90"));
-
-        when(inventoryClient.reserve(productId, quantity)).thenThrow(new InsufficientStockException(productId, quantity));
-
-        assertThrows(InsufficientStockException.class, () -> orderService.placeOrder(request));
-        verify(paymentClient, never()).pay(any(), any());
     }
 
     @Test

@@ -3,7 +3,6 @@ package de.cooperr.chaos.shop.client;
 import de.cooperr.chaos.shop.config.ShopProperties;
 import de.cooperr.chaos.shop.dto.ReservationRequest;
 import de.cooperr.chaos.shop.dto.ReservationResponse;
-import de.cooperr.chaos.shop.exception.InsufficientStockException;
 import de.cooperr.chaos.shop.exception.ProductNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -35,9 +34,6 @@ public class InventoryClient extends ServiceClient {
                 .retrieve()
                 .onStatus(status -> status.isSameCodeAs(HttpStatus.NOT_FOUND), (_, _) -> {
                     throw new ProductNotFoundException(productId);
-                })
-                .onStatus(status -> status.isSameCodeAs(HttpStatus.CONFLICT), (_, _) -> {
-                    throw new InsufficientStockException(productId, quantity);
                 })
                 .body(ReservationResponse.class));
         return response.reservationId();

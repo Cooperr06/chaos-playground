@@ -1,7 +1,6 @@
 package de.cooperr.chaos.inventory.controller;
 
 import de.cooperr.chaos.inventory.dto.Reservation;
-import de.cooperr.chaos.inventory.exception.InsufficientStockException;
 import de.cooperr.chaos.inventory.exception.ProductNotFoundException;
 import de.cooperr.chaos.inventory.service.ChaosService;
 import de.cooperr.chaos.inventory.service.InventoryService;
@@ -17,7 +16,6 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -35,30 +33,7 @@ class InventoryControllerTest {
     private ChaosService chaosService;
 
     @Test
-    void getStock_existingProduct_returnsStock() throws Exception {
-        String productId = "a";
-        int quantity = 1;
-
-        when(inventoryService.getStock(productId)).thenReturn(quantity);
-
-        mockMvc.perform(get("/inventory/{productId}", productId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.productId").value(productId))
-                .andExpect(jsonPath("$.available").value(quantity));
-    }
-
-    @Test
-    void getStock_nonExistingProduct_returnsNotFound() throws Exception {
-        String productId = "unknown";
-
-        when(inventoryService.getStock(productId)).thenThrow(new ProductNotFoundException(productId));
-
-        mockMvc.perform(get("/inventory/{productId}", productId))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void reserve_sufficientStock_returnsCreatedReservation() throws Exception {
+    void reserve_existingProduct_returnsCreatedReservation() throws Exception {
         String productId = "a";
         int quantity = 2;
         UUID reservationId = UUID.randomUUID();
@@ -136,22 +111,5 @@ class InventoryControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void reserve_insufficientStock_returnsConflict() throws Exception {
-        String productId = "a";
-        int quantity = 7;
-        int available = 5;
-        String requestBody = """
-                {"quantity": %d}
-                """.formatted(quantity);
-
-        when(inventoryService.reserve(productId, quantity)).thenThrow(new InsufficientStockException(productId, quantity, available));
-
-        mockMvc.perform(post("/inventory/{productId}/reservations", productId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isConflict());
     }
 }

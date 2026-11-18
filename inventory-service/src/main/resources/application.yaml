@@ -9,10 +9,10 @@ server:
   port: 8081
 
 inventory:
-  initial-stock:
-    watch-1: 1_000_000
-    watch-2: 1_000_000
-    strap-1: 50
+  products:
+    - watch-1
+    - watch-2
+    - strap-1
 
 management:
   endpoints:

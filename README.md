@@ -12,7 +12,7 @@ Ein kleiner Online-Shop aus mehreren Spring-Boot-Diensten. Ein Chaos-Controller 
               v            v
    +-------------------+  +-------------------+
    | inventory-service |  | payment-service   |
-   | (Lagerbestand)    |  | (Zahlung)         |
+   | (Lager)           |  | (Zahlung)         |
    +-------------------+  +-------------------+
 
    +-------------------+       +-------------+
@@ -28,7 +28,7 @@ Ein kleiner Online-Shop aus mehreren Spring-Boot-Diensten. Ein Chaos-Controller 
 | Modul | Aufgabe |
 |---|---|
 | `shop-service` | Nimmt Bestellungen an, ruft Lager und Zahlung auf, enthält die Resilienz-Muster |
-| `inventory-service` | Lagerbestand, läuft später in zwei Instanzen |
+| `inventory-service` | Reserviert Produkte (ohne Bestand, damit es unter Dauerlast nie leer wird), läuft später in zwei Instanzen |
 | `payment-service` | Zahlung |
 | `chaos-controller` | Steuert das Chaos (Docker-API und Chaos-Endpunkte der Dienste) und die Last, bettet die Graphen aus Grafana ein |
 | `load-generator` | Schickt dauerhaft Bestellungen an den Shop, z. B. 10 pro Sekunde |
@@ -38,7 +38,7 @@ Jeder Dienst ist eine eigene Spring-Boot-App in einem eigenen Container, gestart
 ## Szenarien
 
 1. **Zahlung wird langsam** (5 s Latenz): Ohne Schutz blockieren die Threads des Shops, auch unbeteiligte Anfragen hängen (Kaskadenfehler). Mit Timeout und Circuit Breaker öffnet der Breaker nach zu vielen Fehlern, der Shop antwortet sofort mit einem Fallback ("Zahlung wird nachgeholt"). Nach Entfernen der Latenz: HALF_OPEN, dann CLOSED. Zum Vergleich laufen zwei Instanzen des Shops nebeneinander, eine ohne und eine mit Schutz, mit derselben Last (Plan, noch nicht entschieden).
-2. **Lager fällt komplett aus** (Container gestoppt): Retry mit Backoff fängt kurze Aussetzer ab, danach Fallback (zuletzt bekannter Bestand oder "Verfügbarkeit wird geprüft"). Nach dem Neustart läuft alles automatisch weiter.
+2. **Lager fällt komplett aus** (Container gestoppt): Retry mit Backoff fängt kurze Aussetzer ab, danach Fallback ("Verfügbarkeit wird geprüft"). Nach dem Neustart läuft alles automatisch weiter.
 3. **Zufällige Fehler** (30 % HTTP 500 bei der Zahlung): Retry fängt einzelne Fehler ab, das Dashboard zeigt, wie viele Anfragen erst im zweiten Versuch klappten.
 4. **Eine von zwei Lager-Instanzen fällt aus**: Der Shop verteilt die Anfragen auf die verbleibende Instanz.
 

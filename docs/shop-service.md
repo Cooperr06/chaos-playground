@@ -2,6 +2,8 @@
 
 Nimmt Bestellungen an. Pro Bestellung wird erst im `inventory-service` reserviert, dann im `payment-service` bezahlt. Keine Datenbank, Bestellungen werden nicht gespeichert. In dieser Aufgabe gibt es bewusst keine Resilienz (kein Timeout, kein Retry, kein Circuit Breaker, kein Fallback): Das ist der "ohne Schutz"-Zustand für Szenario 1, Resilience4j kommt in einer eigenen Aufgabe dazu.
 
+> **Später geändert:** Das Lager hat keinen Bestand mehr (siehe `docs/inventory-service.md`), es antwortet nie mehr mit `409`. Im Shop sind `InsufficientStockException` und die Behandlung von `409` im `InventoryClient` entfallen, ebenso die Tests dazu. Fehler des Lagers sind jetzt `404` (unbekanntes Produkt) oder `502` (Lager gestört). Der Text unten beschreibt den ursprünglichen Stand.
+
 ## Features
 
 1. Port 8080 und `spring.mvc.problemdetails.enabled: true` in `application.yaml`. In der `pom.xml` fehlt `spring-boot-starter-validation`, die Dependency muss ergänzt werden.

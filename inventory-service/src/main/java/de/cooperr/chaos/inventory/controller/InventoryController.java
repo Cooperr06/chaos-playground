@@ -1,6 +1,5 @@
 package de.cooperr.chaos.inventory.controller;
 
-import de.cooperr.chaos.inventory.dto.InventoryResponse;
 import de.cooperr.chaos.inventory.dto.Reservation;
 import de.cooperr.chaos.inventory.dto.ReservationRequest;
 import de.cooperr.chaos.inventory.service.InventoryService;
@@ -16,12 +15,6 @@ public class InventoryController {
 
     public InventoryController(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
-    }
-
-    @GetMapping("/{productId}")
-    public InventoryResponse getStock(@PathVariable String productId) {
-        int stock = inventoryService.getStock(productId);
-        return new InventoryResponse(productId, stock);
     }
 
     @PostMapping("/{productId}/reservations")

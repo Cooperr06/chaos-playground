@@ -2,6 +2,8 @@
 
 Verwaltet den Lagerbestand. Der Shop fragt hier die Verfügbarkeit ab und reserviert Ware. Keine Datenbank: Der Bestand liegt im Speicher und wird beim Start aus der Konfiguration geladen. Später Ziel für Szenario 2 (Ausfall) und Szenario 4 (zwei Instanzen).
 
+> **Später geändert:** Das Lager hat keinen Bestand mehr. Unter Dauerlast lief `watch-1` leer, und danach hätte jede Bestellung mit `409` geantwortet, ohne dass jemand Chaos gesetzt hat. Das Lager ist dazu da, gestört zu werden (Ausfall, Latenz, Fehler), nicht um Ware zu zählen. Jetzt gilt: `inventory.products` listet die bekannten Produkte, jede Reservierung für ein bekanntes Produkt klappt mit einer neuen `reservationId`, ein unbekanntes gibt `404`. `GET /inventory/{productId}`, `409` und `InsufficientStockException` sind entfallen. Der Unterschied zwischen fachlichem Nein und Ausfall bleibt über `404` zeigbar. Der Text unten beschreibt den ursprünglichen Stand.
+
 ## Features
 
 1. Port 8081 in `application.yaml`.
@@ -66,4 +68,4 @@ Erwartet: erst `200` mit `available: 50`, dann `409`.
 
 ## Bekannte Einschränkung
 
-In Szenario 4 laufen zwei Instanzen, jede mit eigenem Bestand im Speicher. Für die Demo in Ordnung (es geht um Erreichbarkeit, nicht um korrekten Gesamtbestand). Noch nicht entschieden.
+In Szenario 4 laufen zwei Instanzen, jede mit eigenem Bestand im Speicher. Für die Demo in Ordnung (es geht um Erreichbarkeit, nicht um korrekten Gesamtbestand). Noch nicht entschieden. Durch den Wegfall des Bestands (siehe oben) erledigt.

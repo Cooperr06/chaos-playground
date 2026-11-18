@@ -1,7 +1,6 @@
 package de.cooperr.chaos.shop.client;
 
 import de.cooperr.chaos.shop.exception.DownstreamServiceException;
-import de.cooperr.chaos.shop.exception.InsufficientStockException;
 import de.cooperr.chaos.shop.exception.ProductNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,17 +69,6 @@ class InventoryClientTest {
                 .andRespond(withResourceNotFound());
 
         assertThrows(ProductNotFoundException.class, () -> inventoryClient.reserve(productId, quantity));
-    }
-
-    @Test
-    void reserve_insufficientStock_throwsInsufficientStockException() {
-        String productId = "a";
-        int quantity = 60;
-
-        server.expect(requestTo("%s/inventory/%s/reservations".formatted(BASE_URL, productId)))
-                .andRespond(withStatus(HttpStatus.CONFLICT));
-
-        assertThrows(InsufficientStockException.class, () -> inventoryClient.reserve(productId, quantity));
     }
 
     @Test

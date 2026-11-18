@@ -9,9 +9,11 @@ import org.junit.jupiter.api.parallel.Isolated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,6 +21,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 class ChaosInterceptorTest {
+
+    private static final String RESERVATION = """
+            {"quantity": 1}
+            """;
 
     @Autowired
     private MockMvc mockMvc;
@@ -32,26 +38,30 @@ class ChaosInterceptorTest {
     }
 
     @Test
-    void getStock_errorRateOne_returnsInternalServerError() throws Exception {
+    void reserve_errorRateOne_returnsInternalServerError() throws Exception {
         ChaosSettings chaosSettings = new ChaosSettings(0, 1.0);
         String productId = "watch-1";
 
         chaosService.updateSettings(chaosSettings);
 
-        mockMvc.perform(get("/inventory/{productId}", productId))
+        mockMvc.perform(post("/inventory/{productId}/reservations", productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(RESERVATION))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.detail").value(ChaosException.DETAIL_MESSAGE));
     }
 
     @Test
-    void getStock_errorRateZero_returnsOk() throws Exception {
+    void reserve_errorRateZero_returnsCreated() throws Exception {
         ChaosSettings chaosSettings = new ChaosSettings(0, 0.0);
         String productId = "watch-1";
 
         chaosService.updateSettings(chaosSettings);
 
-        mockMvc.perform(get("/inventory/{productId}", productId))
-                .andExpect(status().isOk());
+        mockMvc.perform(post("/inventory/{productId}/reservations", productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(RESERVATION))
+                .andExpect(status().isCreated());
     }
 
     @Test

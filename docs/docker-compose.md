@@ -28,7 +28,7 @@ Bringt `shop-service`, `inventory-service` und `payment-service` mit einem Befeh
 ## Akzeptanzkriterien
 
 - `docker compose up --build` baut alle drei Images und startet die Container ohne Fehler.
-- Die `curl`-Tests aus `docs/shop-service.md` (Bestellung klappt, `409`, `404`) laufen gegen `localhost:8080` und liefern dieselben Antworten wie ohne Docker.
+- Die `curl`-Tests aus `docs/shop-service.md` (Bestellung klappt, `404`; `409` gibt es nicht mehr, seit das Lager keinen Bestand hat) laufen gegen `localhost:8080` und liefern dieselben Antworten wie ohne Docker.
 - `docker compose stop payment-service` gefolgt von einer Bestellung liefert `502` vom Shop, `docker compose start payment-service` macht es wieder gut. Die erste Anfrage direkt nach dem Stopp kann hängen, weil der Shop keine Timeouts hat (Thema von Szenario 1). Spätere Anfragen liefern `502`.
 - `mvn verify` ist weiter grün, am Java-Code hat sich nichts geändert.
 

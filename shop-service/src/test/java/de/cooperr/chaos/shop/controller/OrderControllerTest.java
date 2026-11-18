@@ -4,7 +4,6 @@ import de.cooperr.chaos.shop.dto.OrderRequest;
 import de.cooperr.chaos.shop.dto.OrderResponse;
 import de.cooperr.chaos.shop.dto.OrderStatus;
 import de.cooperr.chaos.shop.exception.DownstreamServiceException;
-import de.cooperr.chaos.shop.exception.InsufficientStockException;
 import de.cooperr.chaos.shop.exception.ProductNotFoundException;
 import de.cooperr.chaos.shop.service.OrderService;
 import org.junit.jupiter.api.Test;
@@ -148,23 +147,6 @@ class OrderControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void createOrder_insufficientStock_returnsConflict() throws Exception {
-        String productId = "a";
-        int quantity = 60;
-        BigDecimal totalAmount = new BigDecimal("99.90");
-        String requestBody = """
-                {"productId": "%s", "quantity": %d, "totalAmount": %s}
-                """.formatted(productId, quantity, totalAmount);
-
-        when(orderService.placeOrder(any(OrderRequest.class))).thenThrow(new InsufficientStockException(productId, quantity));
-
-        mockMvc.perform(post("/orders")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isConflict());
     }
 
     @Test
