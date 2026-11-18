@@ -1,6 +1,8 @@
 :root {
+    color-scheme: light;
     --concrete: #e4e7ea;
     --panel: #fbfcfd;
+    --field: #ffffff;
     --slate: #1e2a33;
     --slate-soft: #5a6873;
     --line: #c9d0d6;
@@ -9,6 +11,8 @@
     --signal-go: #2e8b57;
     --signal-wait: #d99a00;
     --signal-stop: #c23b2e;
+    --wait-text: #9a6c00;
+    --message-bg: #fbeceb;
 
     --radius-control: 0.375rem;
     --space: 1rem;
@@ -19,6 +23,24 @@
     line-height: 1.45;
     color: var(--slate);
     background: var(--concrete);
+}
+
+/* Dark: same roles, lighter signal colors so they keep their contrast on a dark ground */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --concrete: #111519;
+    --panel: #181e24;
+    --field: #10151a;
+    --slate: #e3e8ec;
+    --slate-soft: #9aa7b1;
+    --line: #34404a;
+    --enamel: #7aa7e6;
+    --enamel-dark: #a3c3ef;
+    --signal-go: #45b27e;
+    --signal-wait: #e0a92b;
+    --signal-stop: #e2675a;
+    --wait-text: #e0a92b;
+    --message-bg: #3a1f1d;
 }
 
 * {
@@ -105,6 +127,46 @@ body.sidebar-collapsed .toggle-icon::before {
     content: "\203A";
 }
 
+/* Theme switch at the bottom of the sidebar, also visible when it is collapsed */
+
+.theme-toggle {
+    align-items: center;
+    background: none;
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    color: var(--slate-soft);
+    display: flex;
+    font-weight: 500;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding: 0.625rem var(--space);
+    width: 100%;
+}
+
+.theme-toggle:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--slate) 6%, var(--panel));
+}
+
+/* a half filled circle: the filled half shows the other theme */
+.theme-icon {
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    flex: none;
+    height: 1rem;
+    width: 1rem;
+    background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+}
+
+body.sidebar-collapsed .theme-toggle {
+    justify-content: center;
+    padding: 0.625rem 0;
+}
+
+body.sidebar-collapsed .theme-label {
+    display: none;
+}
+
 .intro,
 .hint {
     color: var(--slate-soft);
@@ -113,7 +175,7 @@ body.sidebar-collapsed .toggle-icon::before {
 }
 
 .message {
-    background: #fbeceb;
+    background: var(--message-bg);
     border-left: 3px solid var(--signal-stop);
     border-radius: var(--radius-control);
     font-size: 0.875rem;
@@ -144,12 +206,10 @@ body.sidebar-collapsed .toggle-icon::before {
     padding: 0;
 }
 
-.load-controls output {
-    font-size: 1.125rem;
-    font-variant-numeric: tabular-nums;
+.load-controls input[type="number"] {
+    flex: none;
     font-weight: 700;
-    min-width: 3ch;
-    text-align: right;
+    width: 4.5rem;
 }
 
 /* Services: one block, the services separated by a line */
@@ -217,6 +277,7 @@ label {
 }
 
 input {
+    background: var(--field);
     border: 1px solid var(--line);
     border-radius: var(--radius-control);
     color: var(--slate);
@@ -253,7 +314,7 @@ button.stop {
 }
 
 button.wait {
-    --button: #9a6c00;
+    --button: var(--wait-text);
 }
 
 button:is(.go, .stop, .wait) {

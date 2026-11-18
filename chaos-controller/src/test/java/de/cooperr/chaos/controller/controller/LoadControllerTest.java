@@ -55,7 +55,7 @@ class LoadControllerTest {
     void updateLoad_rateTooHigh_returnsBadRequest() throws Exception {
         String requestBody = """
                 {"ratePerSecond": %d}
-                """.formatted(101);
+                """.formatted(501);
 
         mockMvc.perform(post("/load")
                         .contentType(MediaType.APPLICATION_JSON)

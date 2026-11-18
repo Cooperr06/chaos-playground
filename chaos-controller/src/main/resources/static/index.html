@@ -6,6 +6,7 @@
     <title>Chaos Playground</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="app.css">
+    <script src="theme.js"></script>
     <script src="app.js" defer></script>
 </head>
 <body>
@@ -29,10 +30,10 @@
         <section class="block" aria-labelledby="load-title">
             <h2 id="load-title">Bestellungen</h2>
             <form id="load-form" class="load-form">
-                <label for="load-rate">Pro Sekunde, an jeden Shop</label>
+                <label for="load-value">Pro Sekunde, an jeden Shop (0 bis 500)</label>
                 <div class="load-controls">
-                    <input id="load-rate" name="ratePerSecond" type="range" min="0" max="100" step="1" value="0">
-                    <output id="load-value" for="load-rate">0</output>
+                    <input id="load-rate" type="range" min="0" max="500" step="1" value="0" aria-label="Bestellungen pro Sekunde, Regler">
+                    <input id="load-value" name="ratePerSecond" type="number" min="0" max="500" step="1" value="0" required>
                     <button type="submit" class="primary">Übernehmen</button>
                 </div>
                 <p id="load-current" class="hint"></p>
@@ -44,6 +45,11 @@
             <div id="services" class="services"></div>
         </section>
     </div>
+
+    <button id="theme-toggle" class="theme-toggle" type="button">
+        <span class="theme-icon" aria-hidden="true"></span>
+        <span class="theme-label"></span>
+    </button>
 </aside>
 
 <main class="graphs">
@@ -60,14 +66,15 @@
 
         <p class="chaos-current hint"></p>
 
-        <form class="chaos">
+        <!-- novalidate: the arrows step by 0.1, but values like 0.33 must stay allowed, the server checks the range -->
+        <form class="chaos" novalidate>
             <label>
                 Verzögerung (ms)
                 <input name="latencyMs" type="number" min="0" max="30000" step="1" value="0" required>
             </label>
             <label>
                 Fehlerquote (0 bis 1)
-                <input name="errorRate" type="number" min="0" max="1" step="any" value="0" required>
+                <input name="errorRate" type="number" min="0" max="1" step="0.1" value="0" required>
             </label>
             <div class="buttons">
                 <button type="submit" class="primary">Chaos setzen</button>

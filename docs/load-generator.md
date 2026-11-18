@@ -17,9 +17,9 @@ Ersetzt die Kundschaft: Der Dienst schickt im festen Takt Bestellungen an den Sh
    - `rate-per-second`: Startwert der Rate. 0 heißt: Der Dienst sendet nach dem Start nichts, bis die Rate über den Endpunkt gesetzt wird.
    - `timeout`: Wie lange auf eine Antwort gewartet wird, danach zählt die Anfrage als Timeout.
    - Die Ziele kommen nur aus der Konfiguration, nicht über den Endpunkt. Sonst könnte jeder, der den Endpunkt erreicht, den Dienst auf beliebige Adressen schicken.
-3. Jede Anfrage ist eine Bestellung: `POST {target-url}/orders` mit `{"productId":"watch-1","quantity":1,"totalAmount":99.90}`. Der Bestand von `watch-1` (1.000.000) reicht bei 10 pro Sekunde etwa 27 Stunden, ein Neustart des `inventory-service` setzt ihn zurück.
+3. Jede Anfrage ist eine Bestellung: `POST {target-url}/orders` mit `{"productId":"watch-1","quantity":1,"totalAmount":99.90}`. Das Lager hat inzwischen keinen Bestand mehr, `watch-1` lässt sich beliebig oft bestellen (siehe `docs/inventory-service.md`).
 4. `POST /load` setzt die Rate
-   - Request (JSON): `ratePerSecond` (Ganzzahl, 0 bis 100). 0 stoppt das Senden. Die Obergrenze schützt den Raspberry Pi.
+   - Request (JSON): `ratePerSecond` (Ganzzahl, 0 bis 100, später auf 500 erhöht: Bei 100 lief lokal noch alles stabil). 0 stoppt das Senden. Die Obergrenze schützt den Raspberry Pi, ob er 500 schafft, ist noch zu prüfen.
    - Erfolg: `200` mit dem Zustand wie bei `GET /load`.
    - Wert außerhalb des Bereichs, fehlendes Feld, fehlender oder unlesbarer Body: `400`.
    - Setzt die Zähler aller Ziele auf 0, damit jede Messung bei null anfängt.
@@ -72,7 +72,7 @@ Ersetzt die Kundschaft: Der Dienst schickt im festen Takt Bestellungen an den Sh
 - `LoadControllerTest`: `@WebMvcTest(LoadController.class)`, `LoadService` gemockt mit `@MockitoBean`.
   - `GET` liefert `200` mit den Werten aus dem Mock.
   - `POST` mit `ratePerSecond` 10 liefert `200`.
-  - `POST` mit `ratePerSecond` -1, 101 und ohne Feld liefert jeweils `400`, der Service wird nicht aufgerufen. Ohne Feld würde sonst still Rate 0 gesetzt, wenn Jackson fehlende `int`-Felder nicht mehr ablehnt. Einen Test ohne Body gibt es nicht, das prüft nur Spring selbst.
+  - `POST` mit `ratePerSecond` -1, 501 (anfangs 101) und ohne Feld liefert jeweils `400`, der Service wird nicht aufgerufen. Ohne Feld würde sonst still Rate 0 gesetzt, wenn Jackson fehlende `int`-Felder nicht mehr ablehnt. Einen Test ohne Body gibt es nicht, das prüft nur Spring selbst.
 - `OrderClientTest`: `RestClient` an einen `MockRestServiceServer` gebunden, wie die Client-Tests im `shop-service`.
   - Antwort `201` ergibt Status 201.
   - Antwort `502` ergibt Status 502, ohne Exception.

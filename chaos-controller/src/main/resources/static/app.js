@@ -29,7 +29,7 @@ const ALLOWED_ACTIONS = {
 };
 
 // kiosk hides the Grafana menu and search, the time range and refresh controls stay
-const DASHBOARD_PATH = '/d/chaos-playground/chaos-playground?orgId=1&refresh=5s&from=now-15m&to=now&theme=light&kiosk';
+const DASHBOARD_PATH = '/d/chaos-playground/chaos-playground?orgId=1&refresh=5s&from=now-15m&to=now&kiosk';
 
 const servicesElement = document.getElementById('services');
 const messageElement = document.getElementById('message');
@@ -122,10 +122,12 @@ const loadRate = document.getElementById('load-rate');
 const loadValue = document.getElementById('load-value');
 const loadCurrent = document.getElementById('load-current');
 
-loadRate.addEventListener('input', () => loadValue.textContent = loadRate.value);
+// slider and number field show the same value, either one can be used
+loadRate.addEventListener('input', () => loadValue.value = loadRate.value);
+loadValue.addEventListener('input', () => loadRate.value = loadValue.value);
 loadForm.addEventListener('submit', event => {
     event.preventDefault();
-    run(() => request('POST', '/load', {ratePerSecond: Number(loadRate.value)}));
+    run(() => request('POST', '/load', {ratePerSecond: Number(loadValue.value)}));
 });
 
 function renderLoad(load) {
@@ -134,7 +136,7 @@ function renderLoad(load) {
         : `Aktuell: ${load.ratePerSecond} pro Sekunde.`;
     if (!loadForm.dataset.filled) {
         loadRate.value = load.ratePerSecond;
-        loadValue.textContent = load.ratePerSecond;
+        loadValue.value = load.ratePerSecond;
         loadForm.dataset.filled = 'true';
     }
 }
@@ -154,14 +156,45 @@ async function refresh() {
     }
 }
 
+let grafanaUrl = null;
+
+function loadGraphs() {
+    if (grafanaUrl) {
+        // Grafana takes its theme from the URL, so switching the theme reloads the graphs
+        document.getElementById('graphs').src = `${grafanaUrl}${DASHBOARD_PATH}&theme=${document.documentElement.dataset.theme}`;
+    }
+}
+
 async function showGraphs() {
     try {
-        const config = await request('GET', '/config');
-        document.getElementById('graphs').src = `${config.grafanaUrl}${DASHBOARD_PATH}`;
+        grafanaUrl = (await request('GET', '/config')).grafanaUrl;
+        loadGraphs();
     } catch (e) {
         showMessage(e.message);
     }
 }
+
+const THEME_KEY = 'chaos-playground.theme';
+const themeToggle = document.getElementById('theme-toggle');
+
+function renderThemeToggle() {
+    const label = document.documentElement.dataset.theme === 'dark' ? 'Helles Design' : 'Dunkles Design';
+    themeToggle.querySelector('.theme-label').textContent = label;
+    themeToggle.title = label;
+}
+
+themeToggle.addEventListener('click', () => {
+    const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = theme;
+    try {
+        localStorage.setItem(THEME_KEY, theme);
+    } catch {
+        // storage blocked: the choice only lasts until the page is reloaded
+    }
+    renderThemeToggle();
+    loadGraphs();
+});
+renderThemeToggle();
 
 const SIDEBAR_KEY = 'chaos-playground.sidebar-collapsed';
 const sidebarToggle = document.getElementById('sidebar-toggle');

@@ -29,13 +29,14 @@ Zeigt, was die Störungen anrichten: Wie viele Bestellungen durchkommen, wie lan
 
 ### Last-Regler im Controller
 
-6. `GET /load` und `POST /load` im Controller reichen an den Lastgenerator weiter, Request und Response `{"ratePerSecond": 10}`, gleiche Grenzen (0 bis 100). Lastgenerator nicht erreichbar: `502`.
+6. `GET /load` und `POST /load` im Controller reichen an den Lastgenerator weiter, Request und Response `{"ratePerSecond": 10}`, gleiche Grenzen (anfangs 0 bis 100, jetzt 0 bis 500). Lastgenerator nicht erreichbar: `502`.
 7. Konfiguration `chaos-controller.load-generator-url` (Standard `http://localhost:8091`).
 
 ### Einbetten von Grafana
 
 8. `GET /config` im Controller liefert `{"grafanaUrl": "http://localhost:3000/grafana"}`. Die Seite baut daraus die Adresse des iframes. Konfiguration `chaos-controller.grafana-url`: lokal die Adresse auf dem Host, auf dem Pi `/grafana` (gleiche Domain).
 9. Aufbau der Seite: links eine Sidebar mit allen Steuerelementen (Bestellungen pro Sekunde, darunter ein gemeinsamer Block "Dienste" mit Zahlung und Lager), rechts Grafana über die volle Höhe. Die Seite selbst scrollt nicht, nur Sidebar oder Grafana, wenn sie nicht passen. Die Sidebar lässt sich wegklappen, der Zustand liegt im `localStorage` des Browsers. Auf schmalen Bildschirmen steht die Sidebar oben.
+   - Hell und dunkel: Knopf unten in der Sidebar, ohne eigene Wahl nach der Systemeinstellung, gemerkt im `localStorage`. `theme.js` setzt das Design, bevor die Seite gezeichnet wird, damit sie nicht erst hell aufblitzt. Grafana bekommt das Design per `&theme=` in der Adresse des iframes und lädt beim Umschalten neu. Die Farbe für `timeout` im Dashboard ist ein mittleres Grau-Blau, das auf beiden Hintergründen lesbar ist.
    - Grafana läuft im iframe im Kiosk-Modus (`&kiosk`): Menü, Suche und "Sign in" sind weg, Zeitraum und Aktualisierung bleiben (geprüft mit Grafana 13.2.5).
 
 ### Grafana-Dashboard
