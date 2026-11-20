@@ -19,10 +19,6 @@
     <div id="sidebar-content" class="sidebar-content">
         <header>
             <h1>Chaos Playground</h1>
-            <p class="intro">
-                Zwei Shops bekommen dieselben Bestellungen, einer ohne und einer mit Schutz.
-                Stör Zahlung oder Lager und sieh rechts, wie beide reagieren.
-            </p>
         </header>
 
         <p id="message" class="message" role="alert" hidden></p>
@@ -30,7 +26,11 @@
         <section class="block" aria-labelledby="load-title">
             <h2 id="load-title">Bestellungen</h2>
             <form id="load-form" class="load-form">
-                <label for="load-value">Pro Sekunde, an jeden Shop (0 bis 500)</label>
+                <label for="load-value">
+                    <span class="label-text">An beide Shops, pro Sekunde
+                        <span class="info" tabindex="0" role="img" aria-label="Erlaubt: 0 bis 500" data-tip="0 bis 500"></span>
+                    </span>
+                </label>
                 <div class="load-controls">
                     <input id="load-rate" type="range" min="0" max="500" step="1" value="0" aria-label="Bestellungen pro Sekunde, Regler">
                     <input id="load-value" name="ratePerSecond" type="number" min="0" max="500" step="1" value="0" required>
@@ -46,6 +46,24 @@
         </section>
     </div>
 
+    <!-- the logout button appears next to the name on hover or keyboard focus -->
+    <div id="account" class="account" hidden>
+        <div id="account-trigger" class="account-trigger" tabindex="0">
+            <svg class="account-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="12" cy="9.5" r="3.5" fill="currentColor"/>
+                <path d="M5.5 19a7 7 0 0 1 13 0z" fill="currentColor"/>
+            </svg>
+            <span id="user" class="account-name"></span>
+            <span id="account-arrow" class="account-arrow" aria-hidden="true" hidden></span>
+        </div>
+        <div id="account-menu" class="account-menu" hidden>
+            <div class="account-bar">
+                <button id="logout" type="button" class="danger">Abmelden</button>
+            </div>
+        </div>
+    </div>
+
     <button id="theme-toggle" class="theme-toggle" type="button">
         <span class="theme-icon" aria-hidden="true"></span>
         <span class="theme-label"></span>
@@ -59,21 +77,25 @@
 <template id="service-template">
     <article class="service">
         <header class="service-header">
-            <span class="lamp" aria-hidden="true"></span>
+            <span class="lamp" aria-hidden="true">Live</span>
             <h3 class="service-name"></h3>
             <span class="service-state"></span>
         </header>
 
         <p class="chaos-current hint"></p>
 
-        <!-- novalidate: the arrows step by 0.1, but values like 0.33 must stay allowed, the server checks the range -->
+        <!-- novalidate: the arrows step by 500 ms and 0.1, but values like 1200 or 0.33 must stay allowed, the server checks the range -->
         <form class="chaos" novalidate>
             <label>
-                Verzögerung (ms)
-                <input name="latencyMs" type="number" min="0" max="30000" step="1" value="0" required>
+                <span class="label-text">Verzögerung (ms)
+                    <span class="info" tabindex="0" role="img" aria-label="Erlaubt: 0 bis 30000 ms" data-tip="0 bis 30000 ms"></span>
+                </span>
+                <input name="latencyMs" type="number" min="0" max="30000" step="500" value="0" required>
             </label>
             <label>
-                Fehlerquote (0 bis 1)
+                <span class="label-text">Fehlerquote
+                    <span class="info" tabindex="0" role="img" aria-label="Erlaubt: 0 bis 1, 0.3 sind 30 % Fehler" data-tip="0 bis 1, 0.3 sind 30 %"></span>
+                </span>
                 <input name="errorRate" type="number" min="0" max="1" step="0.1" value="0" required>
             </label>
             <div class="buttons">

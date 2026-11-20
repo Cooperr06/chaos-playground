@@ -1,0 +1,66 @@
+# Routes and login check of the local Traefik (docs/local-auth.md)
+# fixed self-signed certificate (docs/local-auth.md): the browser exception survives restarts of Traefik,
+# with the generated default certificate it would be a new one each time
+http:
+  middlewares:
+    authelia:
+      forwardAuth:
+        address: http://authelia:9091/api/authz/forward-auth
+        # replace headers of the same name sent by the client, the controller trusts these two
+        authResponseHeaders:
+          - Remote-User
+          - Remote-Groups
+
+  routers:
+    # /actuator matches no router and gets 404: only the dashboard is public
+    # without the /grafana exclusion this longer rule would win over the grafana router
+    chaos:
+      rule: Host(`chaosplayground.local.cooperr.de`) && !PathPrefix(`/actuator`) && !PathPrefix(`/grafana`)
+      entryPoints:
+        - websecure
+      middlewares:
+        - authelia
+      service: chaos-controller
+      tls: {}
+    grafana:
+      rule: Host(`chaosplayground.local.cooperr.de`) && PathPrefix(`/grafana`)
+      entryPoints:
+        - websecure
+      middlewares:
+        - authelia
+      service: grafana
+      tls: {}
+    authelia:
+      rule: Host(`auth.local.cooperr.de`)
+      entryPoints:
+        - websecure
+      service: authelia
+      tls: {}
+
+  # Authelia drops connections that carry no request within 6 s and logs a 408 for each, Traefik keeps unused ones 90 s by default
+  serversTransports:
+    authelia:
+      forwardingTimeouts:
+        idleConnTimeout: 5s
+
+  services:
+    chaos-controller:
+      loadBalancer:
+        servers:
+          - url: http://chaos-controller:8090
+    grafana:
+      loadBalancer:
+        servers:
+          - url: http://grafana:3000
+    authelia:
+      loadBalancer:
+        serversTransport: authelia
+        servers:
+          - url: http://authelia:9091
+
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/local.crt
+        keyFile: /etc/traefik/certs/local.key

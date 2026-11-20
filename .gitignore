@@ -37,3 +37,8 @@ build/
 
 ### Local scratch files ###
 tmp/
+
+### Local auth setup, created per machine (docs/local-auth.md) ###
+local-auth/secrets/
+local-auth/authelia/users_database.yml
+local-auth/traefik/certs/

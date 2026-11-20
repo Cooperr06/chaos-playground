@@ -13,7 +13,7 @@ public class ConfigController {
     private final UiConfig config;
 
     public ConfigController(ChaosControllerProperties properties) {
-        this.config = new UiConfig(properties.grafanaUrl());
+        this.config = new UiConfig(properties.grafanaUrl(), properties.logoutUrl());
     }
 
     @GetMapping

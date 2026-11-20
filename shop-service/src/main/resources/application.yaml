@@ -4,6 +4,9 @@ spring:
   mvc:
     problemdetails:
       enabled: true
+    # Prometheus scrapes the separate management port, so without this the first order would start the servlet in the middle of the demo
+    servlet:
+      load-on-startup: 1
 
 server:
   port: 8080

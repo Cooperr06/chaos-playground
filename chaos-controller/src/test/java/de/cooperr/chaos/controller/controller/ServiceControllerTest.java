@@ -1,5 +1,6 @@
 package de.cooperr.chaos.controller.controller;
 
+import de.cooperr.chaos.controller.config.SecurityConfig;
 import de.cooperr.chaos.controller.dto.ChaosSettings;
 import de.cooperr.chaos.controller.dto.ContainerAction;
 import de.cooperr.chaos.controller.dto.ContainerState;
@@ -12,21 +13,26 @@ import de.cooperr.chaos.controller.service.ChaosControlService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static de.cooperr.chaos.controller.config.AutheliaHeaders.admin;
+import static de.cooperr.chaos.controller.config.AutheliaHeaders.viewer;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ServiceController.class)
+@Import(SecurityConfig.class)
 class ServiceControllerTest {
 
     private static final String PAYMENT = "payment-service";
@@ -44,7 +50,7 @@ class ServiceControllerTest {
                 new ServiceStatus(PAYMENT, ContainerState.RUNNING, new ChaosSettings(5000, 0.3)),
                 new ServiceStatus(INVENTORY, ContainerState.EXITED, null)));
 
-        mockMvc.perform(get("/services"))
+        mockMvc.perform(get("/services").with(viewer()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value(PAYMENT))
                 .andExpect(jsonPath("$[0].containerState").value("RUNNING"))
@@ -66,6 +72,8 @@ class ServiceControllerTest {
         when(chaosControlService.updateChaos(PAYMENT, settings)).thenReturn(settings);
 
         mockMvc.perform(post("/services/{name}/chaos", PAYMENT)
+                        .with(admin())
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
@@ -82,6 +90,8 @@ class ServiceControllerTest {
                 """.formatted(0, 1.5);
 
         mockMvc.perform(post("/services/{name}/chaos", PAYMENT)
+                        .with(admin())
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadRequest());
@@ -98,6 +108,8 @@ class ServiceControllerTest {
         when(chaosControlService.updateChaos(anyString(), any())).thenThrow(new ServiceNotFoundException("shop-service"));
 
         mockMvc.perform(post("/services/{name}/chaos", "shop-service")
+                        .with(admin())
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isNotFound());
@@ -113,6 +125,8 @@ class ServiceControllerTest {
                 .thenThrow(new ServiceUnavailableException(PAYMENT, new RuntimeException("connection refused")));
 
         mockMvc.perform(post("/services/{name}/chaos", PAYMENT)
+                        .with(admin())
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isBadGateway());
@@ -123,7 +137,7 @@ class ServiceControllerTest {
         when(chaosControlService.changeContainer(INVENTORY, ContainerAction.STOP))
                 .thenReturn(new ServiceStatus(INVENTORY, ContainerState.EXITED, null));
 
-        mockMvc.perform(post("/services/{name}/stop", INVENTORY))
+        mockMvc.perform(post("/services/{name}/stop", INVENTORY).with(admin()).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(INVENTORY))
                 .andExpect(jsonPath("$.containerState").value("EXITED"));
@@ -134,7 +148,7 @@ class ServiceControllerTest {
         when(chaosControlService.changeContainer(INVENTORY, ContainerAction.START))
                 .thenReturn(new ServiceStatus(INVENTORY, ContainerState.RUNNING, null));
 
-        mockMvc.perform(post("/services/{name}/start", INVENTORY))
+        mockMvc.perform(post("/services/{name}/start", INVENTORY).with(admin()).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.containerState").value("RUNNING"));
     }
@@ -144,7 +158,7 @@ class ServiceControllerTest {
         when(chaosControlService.changeContainer(PAYMENT, ContainerAction.PAUSE))
                 .thenReturn(new ServiceStatus(PAYMENT, ContainerState.PAUSED, null));
 
-        mockMvc.perform(post("/services/{name}/pause", PAYMENT))
+        mockMvc.perform(post("/services/{name}/pause", PAYMENT).with(admin()).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.containerState").value("PAUSED"));
     }
@@ -154,7 +168,7 @@ class ServiceControllerTest {
         when(chaosControlService.changeContainer(PAYMENT, ContainerAction.UNPAUSE))
                 .thenReturn(new ServiceStatus(PAYMENT, ContainerState.RUNNING, null));
 
-        mockMvc.perform(post("/services/{name}/unpause", PAYMENT))
+        mockMvc.perform(post("/services/{name}/unpause", PAYMENT).with(admin()).with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.containerState").value("RUNNING"));
     }
@@ -163,7 +177,7 @@ class ServiceControllerTest {
     void stop_unknownService_returnsNotFound() throws Exception {
         when(chaosControlService.changeContainer(anyString(), any())).thenThrow(new ServiceNotFoundException("shop-service"));
 
-        mockMvc.perform(post("/services/{name}/stop", "shop-service"))
+        mockMvc.perform(post("/services/{name}/stop", "shop-service").with(admin()).with(csrf()))
                 .andExpect(status().isNotFound());
     }
 
@@ -172,7 +186,7 @@ class ServiceControllerTest {
         when(chaosControlService.changeContainer(anyString(), any()))
                 .thenThrow(new ContainerConflictException("chaos-playground-payment", ContainerAction.PAUSE));
 
-        mockMvc.perform(post("/services/{name}/pause", PAYMENT))
+        mockMvc.perform(post("/services/{name}/pause", PAYMENT).with(admin()).with(csrf()))
                 .andExpect(status().isConflict());
     }
 
@@ -181,7 +195,7 @@ class ServiceControllerTest {
         when(chaosControlService.changeContainer(anyString(), any()))
                 .thenThrow(new DockerException(new RuntimeException("connection refused")));
 
-        mockMvc.perform(post("/services/{name}/stop", PAYMENT))
+        mockMvc.perform(post("/services/{name}/stop", PAYMENT).with(admin()).with(csrf()))
                 .andExpect(status().isBadGateway());
     }
 }

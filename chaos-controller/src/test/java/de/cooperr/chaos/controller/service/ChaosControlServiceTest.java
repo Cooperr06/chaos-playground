@@ -41,7 +41,7 @@ class ChaosControlServiceTest {
         chaosClient = mock(ChaosClient.class);
         loadClient = mock(LoadClient.class);
         ChaosControllerProperties properties = new ChaosControllerProperties("http://socket-proxy:2375",
-                "http://load-generator:8091", "/grafana", List.of(PAYMENT, INVENTORY));
+                "http://load-generator:8091", "/grafana", null, List.of(PAYMENT, INVENTORY));
         service = new ChaosControlService(properties, dockerClient, chaosClient, loadClient);
     }
 

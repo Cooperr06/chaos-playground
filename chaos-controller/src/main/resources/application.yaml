@@ -20,6 +20,8 @@ chaos-controller:
   docker-url: http://localhost:2375
   load-generator-url: http://localhost:8091
   grafana-url: http://localhost:3000/grafana
+  # logout-url: logout page of Authelia, not set: the page shows no logout button
+
   services:
     - name: payment-service
       container: chaos-playground-payment
@@ -27,6 +29,11 @@ chaos-controller:
     - name: inventory-service
       container: chaos-playground-inventory
       url: http://localhost:8081
+
+  # Authelia groups (header Remote-Groups) that get the roles, the homelab may use its own groups
+  auth:
+    admin-group: chaos-admin
+    viewer-group: chaos-viewer
 
 management:
   endpoints:

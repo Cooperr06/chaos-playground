@@ -111,6 +111,8 @@ services:
       CHAOSCONTROLLER_LOADGENERATORURL: http://load-generator:8091
       # as seen by the browser, on the Pi the public path /grafana
       CHAOSCONTROLLER_GRAFANAURL: ${GRAFANA_URL:-http://localhost:3000/grafana}
+      # logout page of Authelia, empty: no logout button
+      CHAOSCONTROLLER_LOGOUTURL: ${LOGOUT_URL:-}
       CHAOSCONTROLLER_SERVICES_0_NAME: payment-service
       CHAOSCONTROLLER_SERVICES_0_CONTAINER: chaos-playground-payment
       CHAOSCONTROLLER_SERVICES_0_URL: http://payment-service:8082
@@ -163,6 +165,12 @@ services:
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
       GF_NEWS_NEWS_FEED_ENABLED: "false"
+      # Grafana logs every panel query at info ("Plugin Request Completed"), with refresh=5s that is a line per panel every 5 s
+      GF_LOG_FILTERS: plugin.prometheus:warn
+      # Grafana 13 downloads 18 plugins on every start (tmpfs below), Prometheus among them, in the background:
+      # until it arrives the panels show "plugin not registered". Prometheus before the start, the others not at all.
+      GF_PLUGINS_PREINSTALL_SYNC: prometheus
+      GF_PLUGINS_DISABLE_PLUGINS: grafana-lokiexplore-app,grafana-pyroscope-app,grafana-exploretraces-app,grafana-metricsdrilldown-app,elasticsearch,tempo,zipkin,opentsdb,stackdriver,mssql,jaeger,loki,mysql,influxdb,grafana-advisor-app,grafana-postgresql-datasource,grafana-pyroscope-datasource
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro

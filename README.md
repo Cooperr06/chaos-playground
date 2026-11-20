@@ -51,24 +51,93 @@ Chaos entsteht über zwei Wege: Ausfall per Docker-API (Container stoppen oder p
 - Actuator und Micrometer für Metriken und Breaker-Zustände
 - Prometheus sammelt die Metriken, Grafana zeigt sie als Dashboard (`docs/dashboard.md`)
 - Docker Compose
-- Nginx Proxy Manager für `chaosplayground.cooperr.de` auf dem Raspberry Pi
+- Traefik und Authelia für `chaosplayground.cooperr.de` auf dem Raspberry Pi (`docs/login.md`)
 - GitHub Actions für die CI-Pipeline
 
 ## Starten
+
+Voraussetzung: Docker mit Docker Compose. Für Build und Tests ohne Docker zusätzlich ein JDK 25.
+
+### Bauen und testen
+
+```
+./mvnw verify
+```
+
+### Ohne Login
+
+Für die Dienste, `curl` und Grafana. Die Oberfläche des Controllers ist so gesperrt (`401`), sie braucht den Login (nächster Abschnitt).
 
 ```
 docker compose up --build
 docker compose down
 ```
 
-Shop ohne Resilienz, Lager, Zahlung, Shop mit Resilienz, Chaos-Controller und Lastgenerator laufen dann auf `127.0.0.1:8080`, `8081`, `8082`, `8083`, `8090` und `8091`. Actuator der beiden Shops liegt auf `9080` und `9083`. Die Oberfläche des Chaos-Controllers liegt unter `http://localhost:8090`, Grafana unter `http://localhost:3000/grafana` und Prometheus unter `http://localhost:9090`. Mit `-d` startet alles im Hintergrund.
+Shop ohne Resilienz, Lager, Zahlung, Shop mit Resilienz, Chaos-Controller und Lastgenerator laufen dann auf `127.0.0.1:8080`, `8081`, `8082`, `8083`, `8090` und `8091`. Actuator der beiden Shops liegt auf `9080` und `9083`. Grafana liegt unter `http://localhost:3000/grafana`, Prometheus unter `http://localhost:9090`. Mit `-d` startet alles im Hintergrund.
+
+Der Controller lässt sich mit den Headern ansprechen, die sonst Traefik setzt, z. B.:
+
+```
+curl localhost:8090/services -H 'Remote-User: guest' -H 'Remote-Groups: chaos-viewer'
+```
+
+### Mit Login (wie auf dem Pi)
+
+Traefik und Authelia davor, Anmeldung im Browser unter `https://chaosplayground.local.cooperr.de`. Hintergrund und Prüfschritte: `docs/local-auth.md`.
+
+Die Hostnamen brauchen keine Einrichtung: Im DNS zeigt `*.local.cooperr.de` auf `127.0.0.1`. Falls der Router solche Antworten blockiert (DNS-Rebind-Schutz, z. B. FritzBox), dort eine Ausnahme für `local.cooperr.de` eintragen. Prüfen mit `dig chaosplayground.local.cooperr.de`.
+
+Traefik nimmt lokal ein selbst signiertes Zertifikat (Schritt 3 unten). Der Browser warnt deshalb beim ersten Aufruf von `chaosplayground.local.cooperr.de` und `auth.local.cooperr.de`, die Warnung jeweils wegklicken. Das Zertifikat bleibt über Neustarts gleich, die Ausnahme im Browser also auch. Adminrechte sind nicht nötig.
+
+Einmal pro Rechner einrichten:
+
+1. Secrets für Authelia:
+   ```
+   mkdir -p local-auth/secrets
+   for name in session_secret storage_encryption_key jwt_secret; do openssl rand -hex 32 > local-auth/secrets/$name; done
+   ```
+2. Testbenutzer `admin` (Passwort `admin`) und `viewer` (Passwort `viewer`): Für beide Passwörter einen Hash erzeugen
+   ```
+   docker run --rm authelia/authelia:4.39.28 authelia crypto hash generate argon2 --password 'admin'
+   docker run --rm authelia/authelia:4.39.28 authelia crypto hash generate argon2 --password 'viewer'
+   ```
+   und damit `local-auth/authelia/users_database.yml` anlegen (Hash ist der Teil nach `Digest: `):
+   ```
+   users:
+     admin:
+       displayname: 'Test Admin'
+       password: '<hash von admin>'
+       email: 'admin@local.cooperr.de'
+       groups:
+         - 'chaos-admin'
+     viewer:
+       displayname: 'Test Viewer'
+       password: '<hash von viewer>'
+       email: 'viewer@local.cooperr.de'
+       groups:
+         - 'chaos-viewer'
+   ```
+3. Zertifikat für Traefik:
+   ```
+   mkdir -p local-auth/traefik/certs
+   openssl req -x509 -newkey rsa:2048 -nodes -days 825 -subj '/CN=*.local.cooperr.de' -addext 'subjectAltName=DNS:*.local.cooperr.de' -keyout local-auth/traefik/certs/local.key -out local-auth/traefik/certs/local.crt
+   ```
+
+Secrets, Benutzer und Zertifikat stehen in der `.gitignore`. Danach starten:
+
+```
+docker compose -f docker-compose.yml -f docker-compose.auth.yml up --build
+docker compose -f docker-compose.yml -f docker-compose.auth.yml down
+```
+
+`admin` darf Chaos setzen, Container steuern und die Last ändern, `viewer` nur zusehen. Abmelden über den Namen unten in der Sidebar. Anmeldungen liegen in Redis und überstehen Neustarts, `down -v` löscht sie.
 
 ## Plan
 
 - **Fertig:** `payment-service`, `inventory-service` und `shop-service` mit Tests, Dockerfiles, Docker Compose, CI-Pipeline mit Images auf `ghcr.io` und Smoke-Test, Chaos-Endpunkt in Zahlung und Lager, Lastgenerator, Chaos-Controller mit Oberfläche und Docker-Zugriff über einen Socket-Proxy, Dashboard mit Prometheus und Grafana. Szenario 1 (Timeout, Circuit Breaker und Fallback, zwei Shops nebeneinander, `docs/scenario-1.md`).
 - **Als Nächstes:** Zugang mit Login, dann Betrieb auf dem Pi.
 - **Danach:** Szenarien 2 bis 4.
-- **Zugang:** Das Dashboard bekommt zwei Logins, `viewer` (nur ansehen) und `admin` (zusätzlich Chaos-Knöpfe), damit Gäste die Demo selbst ausprobieren können.
+- **Zugang:** Anmeldung über Authelia mit zwei Rollen, `viewer` (nur ansehen) und `admin` (zusätzlich Chaos-Knöpfe), damit Gäste die Demo selbst ausprobieren können.
 
 ## Lizenz
 

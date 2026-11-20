@@ -10,11 +10,13 @@ import java.util.List;
  * @param dockerUrl        the base URL of the Docker API, e.g. {@code http://socket-proxy:2375}
  * @param loadGeneratorUrl the base URL of the load generator, e.g. {@code http://load-generator:8091}
  * @param grafanaUrl       the URL of Grafana as seen by the browser, e.g. {@code /grafana}
+ * @param logoutUrl        the logout page of Authelia, e.g. {@code https://auth.example.com/logout}, without it the
+ *                         page shows no logout button
  * @param services         the services that can be controlled, nothing else can be reached through the endpoints
  */
 @ConfigurationProperties("chaos-controller")
 public record ChaosControllerProperties(String dockerUrl, String loadGeneratorUrl, String grafanaUrl,
-                                        List<ServiceTarget> services) {
+                                        String logoutUrl, List<ServiceTarget> services) {
 
     /**
      * One service that can be controlled.

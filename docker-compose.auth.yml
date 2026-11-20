@@ -1,0 +1,80 @@
+# Local copy of the setup on the Pi: Traefik and Authelia in front of controller and Grafana (docs/local-auth.md).
+# Start together with the main file:
+#   docker compose -f docker-compose.yml -f docker-compose.auth.yml up --build
+
+# anchors do not reach across files, so the log limit from docker-compose.yml is repeated here
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "2"
+
+services:
+  traefik:
+    container_name: chaos-playground-traefik
+    image: traefik:v3.7.19
+    ports:
+      - "127.0.0.1:443:443"
+    # routes come from files, not from Docker labels, so Traefik does not need the Docker socket
+    volumes:
+      - ./local-auth/traefik:/etc/traefik:ro
+    depends_on:
+      - authelia
+      - chaos-controller
+      - grafana
+    restart: unless-stopped
+    logging: *logging
+
+  authelia:
+    container_name: chaos-playground-authelia
+    image: authelia/authelia:4.39.28
+    # as root the entrypoint runs chown -R on /config first, which fails on the read-only volume
+    user: "1000:1000"
+    environment:
+      AUTHELIA_SESSION_SECRET_FILE: /secrets/session_secret
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /secrets/storage_encryption_key
+      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /secrets/jwt_secret
+    volumes:
+      - ./local-auth/authelia:/config:ro
+      - ./local-auth/secrets:/secrets:ro
+    # database and notifications are not needed locally and may go with every restart
+    tmpfs:
+      # the container runs as 1000, a tmpfs belongs to root by default
+      - /data:uid=1000,gid=1000
+    # default: reached by Traefik, auth: the only way to Redis
+    networks:
+      - default
+      - auth
+    depends_on:
+      - redis
+    restart: unless-stopped
+    logging: *logging
+
+  # sessions of Authelia, on disk so that "remember me" survives restarts
+  redis:
+    container_name: chaos-playground-redis
+    image: redis:8.8.4-alpine
+    # snapshot to /data at most 60 s after a change, and on every regular stop
+    command: ["redis-server", "--save", "60", "1"]
+    volumes:
+      - authelia-sessions:/data
+    # only Authelia is on this network, so no password; the sessions in it would let anyone act as the logged in user
+    networks:
+      - auth
+    restart: unless-stopped
+    logging: *logging
+
+  chaos-controller:
+    environment:
+      CHAOSCONTROLLER_GRAFANAURL: https://chaosplayground.local.cooperr.de/grafana
+      CHAOSCONTROLLER_LOGOUTURL: https://auth.local.cooperr.de/logout
+
+  grafana:
+    environment:
+      GF_SERVER_ROOT_URL: https://chaosplayground.local.cooperr.de/grafana/
+
+networks:
+  auth:
+
+volumes:
+  authelia-sessions:

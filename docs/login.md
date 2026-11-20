@@ -22,7 +22,9 @@ Grafana braucht keine Änderung: Traefik schützt `/grafana` mit derselben Middl
 | `chaos-viewer` | `VIEWER` | Seite, Dashboard und alle `GET`-Endpunkte |
 | `chaos-admin` | `ADMIN` | zusätzlich Chaos setzen, Container steuern, Last ändern |
 
-Wer in beiden Gruppen ist, ist `ADMIN`. Andere Gruppen werden ignoriert. Die Gruppennamen stehen fest im Code, das Homelab legt sie so an.
+Wer in beiden Gruppen ist, ist `ADMIN`. Andere Gruppen werden ignoriert.
+
+Die Gruppennamen sind einstellbar, damit das Homelab auch schon bestehende Gruppen verwenden kann: `chaos-controller.auth.admin-group` und `chaos-controller.auth.viewer-group` (Record `AuthProperties`), Standard in `application.yaml` sind die Namen aus der Tabelle. In Compose als `CHAOSCONTROLLER_AUTH_ADMINGROUP` und `CHAOSCONTROLLER_AUTH_VIEWERGROUP`. Header- und Rollennamen bleiben Konstanten, sie sind durch Authelia bzw. den Code festgelegt.
 
 ## Features
 
@@ -34,7 +36,7 @@ Wer in beiden Gruppen ist, ist `ADMIN`. Andere Gruppen werden ignoriert. Die Gru
    - Alle anderen `GET`-Anfragen (Seite, statische Dateien, `/config`, `/services`, `/load`, `/me`): `VIEWER` oder `ADMIN`.
    - Alles andere: abgelehnt.
 4. Statuscodes: Nicht angemeldet: `401`. Angemeldet, aber ohne passende Rolle: `403`. Der Body ist egal, `app.js` zeigt dann ihren Standardtext "antwortet mit 403".
-5. Keine HTTP-Session, kein Login-Formular, kein HTTP Basic, kein Logout. Jede Anfrage bringt ihre Header mit.
+5. Keine HTTP-Session, kein Login-Formular, kein HTTP Basic, kein Logout in Spring (abgemeldet wird bei Authelia). Jede Anfrage bringt ihre Header mit.
 6. CSRF-Schutz bleibt an (Begründung unten unter "Warum CSRF"). Spring legt ein zufälliges Token in das Cookie `XSRF-TOKEN`, `app.js` schickt es bei jedem `POST` im Header `X-XSRF-TOKEN` zurück. Ohne passenden Header lehnt Spring den `POST` mit `403` ab, auch für `ADMIN`.
 7. `GET /me` liefert den angemeldeten Benutzer: `200` mit `{"name": "prof", "admin": true}`.
 8. Oberfläche: Oben steht, wer angemeldet ist und mit welcher Rolle ("Admin" oder "Nur ansehen"). Für `VIEWER` sind die Eingabefelder und Knöpfe für Chaos, Container und Last deaktiviert. Das ist nur Bequemlichkeit, die Prüfung macht der Server.
@@ -81,6 +83,12 @@ Alle Klassen unten sind im Quelltext von Spring Security 7.1.1 bzw. Spring Boot 
 
 - Alle Aufrufe laufen schon über `request(method, path, body)`. Dort bei jedem `POST` den Header `X-XSRF-TOKEN` setzen, Wert aus dem Cookie `XSRF-TOKEN` (aus `document.cookie` lesen). Das Cookie setzt Spring schon beim ersten `GET` der Seite.
 - Beim Start einmal `GET /me`, Name und Rolle anzeigen, bei `admin: false` die Steuerelemente deaktivieren.
+- `request()` schickt `Accept: application/json`. Sonst sendet `fetch` `*/*`, und Authelia antwortet einer abgemeldeten Anfrage mit einer Weiterleitung zur Anmeldeseite statt mit `401` (`handler_authz_util.go`, v4.39.28: `if ctx.IsXHR() || !ctx.AcceptsMIME("text/html") { return fasthttp.StatusUnauthorized }`). Bei `401` lädt die Seite neu, Authelia leitet dann zur Anmeldung um. So landet man nach einem Logout in einem anderen Tab oder nach Ablauf der Sitzung spätestens nach 2 Sekunden (Abfrageintervall) bei der Anmeldung. Den Fehler, den Grafana im iframe in der Zeit zeigt, kann die Seite nicht ausblenden.
+
+### Abmelden
+
+- Konfiguration `chaos-controller.logout-url` (Umgebung `CHAOSCONTROLLER_LOGOUTURL`, in `docker-compose.yml` aus `LOGOUT_URL`), die Logout-Seite von Authelia. `GET /config` liefert sie als `logoutUrl` mit. Ohne Wert zeigt die Seite keinen Knopf.
+- Unten in der Sidebar über dem Design-Umschalter: Benutzersymbol, Name und ein Pfeil nach rechts, die Rolle als Tooltip. Beim Überfahren mit der Maus (oder Fokus per Tastatur) erscheint rechts daneben ein roter Knopf "Abmelden". Bei eingeklappter Sidebar nur das Symbol, auf schmalen Bildschirmen steht der Knopf fest neben dem Namen (kein Platz rechts, kein Hover auf Touch). Der Knopf führt zu `<logout-url>?rd=<Adresse des Dashboards>`. Die Logout-Seite beendet die Sitzung und schickt den Browser nach etwa 2 Sekunden zu `rd` zurück, von dort geht es zur Anmeldung und danach wieder zum Dashboard. Authelia folgt `rd` nur bei `https` und einem Host unter der Cookie-Domain (`IsSafeRedirectionTargetURI` in `internal/middlewares/authelia_context.go`, v4.39.28), sonst bleibt es auf seiner Startseite.
 
 ### Sicherheitsannahme
 
@@ -126,6 +134,5 @@ Ohne Traefik ist die Oberfläche im Browser ab jetzt gesperrt (`401`).
 ## Nicht Teil dieser Aufgabe
 
 - Traefik, Authelia und die lokale Testumgebung (`docs/local-auth.md`), das Homelab selbst.
-- Logout-Link auf der Seite.
 - Prüfung der Absender-IP im Controller. Authelia empfiehlt, dass die App Header nur von der IP des Proxys annimmt ("Trusted Remote Networks", Seite zu Trusted Header SSO). Bewusst weggelassen: Im Docker-Netz hängen nur die eigenen Dienste und Traefik, und die IP von Traefik müsste dafür fest vergeben werden.
 - OIDC (verworfen zugunsten von Forward-Auth, weniger Konfiguration und derselbe Weg wie bei Grafana).

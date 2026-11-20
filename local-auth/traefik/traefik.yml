@@ -1,0 +1,8 @@
+# Static configuration of the local Traefik (docs/local-auth.md)
+entryPoints:
+  websecure:
+    address: ":443"
+
+providers:
+  file:
+    directory: /etc/traefik/dynamic

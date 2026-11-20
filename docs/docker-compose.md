@@ -12,7 +12,7 @@ Bringt `shop-service`, `inventory-service` und `payment-service` mit einem Befeh
 3. `docker-compose.yml` im Root mit den drei Diensten:
    - Projektname `chaos-playground`, ein eigenes Netz. Die Dienste erreichen sich über ihre Dienstnamen (`inventory-service`, `payment-service`).
    - `shop-service` bekommt die Dienst-URLs per Umgebungsvariable (`shop.inventory-url` und `shop.payment-url` zeigen auf `http://inventory-service:8081` und `http://payment-service:8082`). Wie Spring Boot Umgebungsvariablen auf diese Property-Namen abbildet (Stichwort Relaxed Binding), bitte in der Boot-Doku nachsehen. Die `application.yaml` mit `localhost` bleibt unverändert.
-   - Ports nur an `127.0.0.1` veröffentlichen (`127.0.0.1:8080:8080` und so weiter), damit nichts im Heimnetz offen ist. Auf dem Pi kommt der öffentliche Zugang später über den Nginx Proxy Manager.
+   - Ports nur an `127.0.0.1` veröffentlichen (`127.0.0.1:8080:8080` und so weiter), damit nichts im Heimnetz offen ist. Auf dem Pi kommt der öffentliche Zugang später über Traefik.
    - `restart: unless-stopped`.
    - `depends_on`: der Shop startet nach Lager und Zahlung.
 4. Aufbau- und Startbefehl im `README.md`: `docker compose up --build` und `docker compose down`.
@@ -51,7 +51,7 @@ Erwartet: `201`, nach dem Stopp `502`, nach dem Start wieder `201`.
 - `chaos-controller`, `load-generator`, Dashboard und Login
 - Resilienz, zwei Shop-Instanzen
 - Healthchecks, Ressourcenlimits
-- Nginx Proxy Manager und die Domain `chaosplayground.cooperr.de`
+- Traefik und die Domain `chaosplayground.cooperr.de`
 
 ## Entscheidung: Wie kommt das Projekt auf den Pi?
 

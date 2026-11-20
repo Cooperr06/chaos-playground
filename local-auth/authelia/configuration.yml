@@ -1,0 +1,35 @@
+# Local Authelia (docs/local-auth.md). Secrets come from files, see AUTHELIA_*_FILE in docker-compose.auth.yml.
+server:
+  address: 'tcp://:9091/'
+
+authentication_backend:
+  file:
+    # not in the repo, created once per machine (docs/local-auth.md)
+    path: '/config/users_database.yml'
+
+session:
+  cookies:
+    - domain: 'local.cooperr.de'
+      authelia_url: 'https://auth.local.cooperr.de'
+  # without it the sessions live in memory and every restart logs everyone out
+  redis:
+    host: 'redis'
+    port: 6379
+
+storage:
+  local:
+    path: '/data/db.sqlite3'
+
+notifier:
+  filesystem:
+    filename: '/data/notification.txt'
+
+access_control:
+  default_policy: 'deny'
+  rules:
+    # no bypass for this domain: with bypass, Remote-* headers sent by the client would reach the controller
+    - domain: 'chaosplayground.local.cooperr.de'
+      policy: 'one_factor'
+      subject:
+        - 'group:chaos-viewer'
+        - 'group:chaos-admin'
