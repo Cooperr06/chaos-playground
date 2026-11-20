@@ -37,7 +37,7 @@ Jeder Dienst ist eine eigene Spring-Boot-App in einem eigenen Container, gestart
 
 ## Szenarien
 
-1. **Zahlung wird langsam** (5 s Latenz): Ohne Schutz blockieren die Threads des Shops, auch unbeteiligte Anfragen hängen (Kaskadenfehler). Mit Timeout und Circuit Breaker öffnet der Breaker nach zu vielen Fehlern, der Shop antwortet sofort mit einem Fallback ("Zahlung wird nachgeholt"). Nach Entfernen der Latenz: HALF_OPEN, dann CLOSED. Zum Vergleich laufen zwei Instanzen des Shops nebeneinander, eine ohne und eine mit Schutz, mit derselben Last (Plan, noch nicht entschieden).
+1. **Zahlung wird langsam** (5 s Latenz): Ohne Schutz blockieren die Threads des Shops, auch unbeteiligte Anfragen hängen (Kaskadenfehler). Mit Timeout und Circuit Breaker öffnet der Breaker nach zu vielen Fehlern, der Shop antwortet sofort mit einem Fallback ("Zahlung wird nachgeholt"). Nach Entfernen der Latenz: HALF_OPEN, dann CLOSED. Zum Vergleich laufen zwei Instanzen des Shops nebeneinander, eine ohne und eine mit Schutz, mit derselben Last.
 2. **Lager fällt komplett aus** (Container gestoppt): Retry mit Backoff fängt kurze Aussetzer ab, danach Fallback ("Verfügbarkeit wird geprüft"). Nach dem Neustart läuft alles automatisch weiter.
 3. **Zufällige Fehler** (30 % HTTP 500 bei der Zahlung): Retry fängt einzelne Fehler ab, das Dashboard zeigt, wie viele Anfragen erst im zweiten Versuch klappten.
 4. **Eine von zwei Lager-Instanzen fällt aus**: Der Shop verteilt die Anfragen auf die verbleibende Instanz.
@@ -134,8 +134,8 @@ docker compose -f docker-compose.yml -f docker-compose.auth.yml down
 
 ## Plan
 
-- **Fertig:** `payment-service`, `inventory-service` und `shop-service` mit Tests, Dockerfiles, Docker Compose, CI-Pipeline mit Images auf `ghcr.io` und Smoke-Test, Chaos-Endpunkt in Zahlung und Lager, Lastgenerator, Chaos-Controller mit Oberfläche und Docker-Zugriff über einen Socket-Proxy, Dashboard mit Prometheus und Grafana. Szenario 1 (Timeout, Circuit Breaker und Fallback, zwei Shops nebeneinander, `docs/scenario-1.md`).
-- **Als Nächstes:** Zugang mit Login, dann Betrieb auf dem Pi.
+- **Fertig:** `payment-service`, `inventory-service` und `shop-service` mit Tests, Dockerfiles, Docker Compose, CI-Pipeline mit Images auf `ghcr.io` und Smoke-Test, Chaos-Endpunkt in Zahlung und Lager, Lastgenerator, Chaos-Controller mit Oberfläche und Docker-Zugriff über einen Socket-Proxy, Dashboard mit Prometheus und Grafana, Login über Authelia mit lokaler Testumgebung (Traefik, Authelia, Redis). Szenario 1 (Timeout, Circuit Breaker und Fallback, zwei Shops nebeneinander, `docs/scenario-1.md`).
+- **Als Nächstes:** Betrieb auf dem Pi hinter Traefik und Authelia des Homelabs, Deployment über Komodo.
 - **Danach:** Szenarien 2 bis 4.
 - **Zugang:** Anmeldung über Authelia mit zwei Rollen, `viewer` (nur ansehen) und `admin` (zusätzlich Chaos-Knöpfe), damit Gäste die Demo selbst ausprobieren können.
 

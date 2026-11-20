@@ -55,4 +55,4 @@ Erwartet: `201`, nach dem Stopp `502`, nach dem Start wieder `201`.
 
 ## Entscheidung: Wie kommt das Projekt auf den Pi?
 
-Der Pi holt den Code von GitHub. Entweder wird das Repo auf dem Pi geklont und mit `docker compose up --build` gestartet, oder Portainer stellt einen Stack aus dem Git-Repo bereit (Details in der Portainer-Doku nachsehen, nicht annehmen). Pipelines laufen auf GitHub. Beides ist erst für den Deployment-Schritt nötig.
+Der Pi holt den Code von GitHub. Entweder wird das Repo auf dem Pi geklont und mit `docker compose up --build` gestartet, oder Komodo stellt einen Stack aus dem Git-Repo bereit (Details in der Komodo-Doku nachsehen, nicht annehmen). Pipelines laufen auf GitHub. Beides ist erst für den Deployment-Schritt nötig.

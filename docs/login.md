@@ -39,7 +39,7 @@ Die Gruppennamen sind einstellbar, damit das Homelab auch schon bestehende Grupp
 5. Keine HTTP-Session, kein Login-Formular, kein HTTP Basic, kein Logout in Spring (abgemeldet wird bei Authelia). Jede Anfrage bringt ihre Header mit.
 6. CSRF-Schutz bleibt an (Begründung unten unter "Warum CSRF"). Spring legt ein zufälliges Token in das Cookie `XSRF-TOKEN`, `app.js` schickt es bei jedem `POST` im Header `X-XSRF-TOKEN` zurück. Ohne passenden Header lehnt Spring den `POST` mit `403` ab, auch für `ADMIN`.
 7. `GET /me` liefert den angemeldeten Benutzer: `200` mit `{"name": "prof", "admin": true}`.
-8. Oberfläche: Oben steht, wer angemeldet ist und mit welcher Rolle ("Admin" oder "Nur ansehen"). Für `VIEWER` sind die Eingabefelder und Knöpfe für Chaos, Container und Last deaktiviert. Das ist nur Bequemlichkeit, die Prüfung macht der Server.
+8. Oberfläche: Unten in der Sidebar steht, wer angemeldet ist, die Rolle ("Admin" oder "Nur ansehen") als Tooltip (Details unter "Abmelden"). Für `VIEWER` sind die Eingabefelder und Knöpfe für Chaos, Container und Last deaktiviert. Das ist nur Bequemlichkeit, die Prüfung macht der Server.
 
 ## Vorgaben zur Umsetzung
 
