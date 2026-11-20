@@ -197,45 +197,86 @@ jobs:
             localhost:3000/grafana/api/dashboards/uid/chaos-playground)
           [ "$status" = 200 ] || { echo "expected 200, got $status"; exit 1; }
 
+      - name: Grafana queries Prometheus anonymously
+        run: |
+          # fails with 404 "plugin not registered" if Grafana installs the Prometheus plugin in the background again
+          status=$(curl --silent --output "$RUNNER_TEMP/query.json" --write-out '%{http_code}' \
+            --request POST localhost:3000/grafana/api/ds/query \
+            --header 'Content-Type: application/json' \
+            --data '{"from":"now-5m","to":"now","queries":[{"refId":"A","datasource":{"type":"prometheus","uid":"prometheus"},"expr":"up","instant":true}]}')
+          cat "$RUNNER_TEMP/query.json"
+          echo
+          [ "$status" = 200 ] || { echo "expected 200, got $status"; exit 1; }
+
+      # Traefik sets Remote-User and Remote-Groups on the Pi, here the requests go to the controller directly
+      - name: Prepare controller requests
+        run: |
+          cat > "$RUNNER_TEMP/controller.sh" <<'EOF'
+          JAR="$RUNNER_TEMP/controller-cookies"
+
+          # GET as admin, prints the body
+          controller_get() {
+            curl --silent --fail --show-error --header 'Remote-User: ci' --header 'Remote-Groups: chaos-admin' \
+              "localhost:8090$1"
+          }
+
+          # POST as a user of the given group, prints the status; the CSRF token comes from the cookie XSRF-TOKEN
+          # that a GET before sets, as app.js does it
+          controller_post() {
+            local group=$1 path=$2 data=${3:-} token
+            curl --silent --output /dev/null --cookie-jar "$JAR" \
+              --header 'Remote-User: ci' --header "Remote-Groups: $group" localhost:8090/me
+            token=$(awk '$6 == "XSRF-TOKEN" {print $7}' "$JAR")
+            [ -n "$token" ] || { echo "no cookie XSRF-TOKEN" >&2; return 1; }
+            curl --silent --output /dev/null --write-out '%{http_code}' --request POST "localhost:8090$path" \
+              --header 'Remote-User: ci' --header "Remote-Groups: $group" \
+              --cookie "XSRF-TOKEN=$token" --header "X-XSRF-TOKEN: $token" \
+              --header 'Content-Type: application/json' --data "$data"
+          }
+
+          expect() {
+            [ "$2" = "$1" ] || { echo "expected $1, got $2"; exit 1; }
+          }
+          EOF
+
+      - name: Chaos controller requires login, role and CSRF token
+        run: |
+          source "$RUNNER_TEMP/controller.sh"
+          expect 401 "$(curl --silent --output /dev/null --write-out '%{http_code}' localhost:8090/services)"
+          expect 403 "$(controller_post chaos-viewer /load '{"ratePerSecond":5}')"
+          expect 403 "$(curl --silent --output /dev/null --write-out '%{http_code}' --request POST localhost:8090/load \
+            --header 'Remote-User: ci' --header 'Remote-Groups: chaos-admin' \
+            --header 'Content-Type: application/json' --data '{"ratePerSecond":5}')"
+
       - name: Chaos controller sets load
         run: |
-          curl --silent --fail --show-error --request POST localhost:8090/load \
-            --header 'Content-Type: application/json' \
-            --data '{"ratePerSecond":5}'
-          echo
-          load=$(curl --silent --fail localhost:8090/load)
-          curl --silent --fail --output /dev/null --request POST localhost:8090/load \
-            --header 'Content-Type: application/json' \
-            --data '{"ratePerSecond":0}'
+          source "$RUNNER_TEMP/controller.sh"
+          expect 200 "$(controller_post chaos-admin /load '{"ratePerSecond":5}')"
+          load=$(controller_get /load)
+          expect 200 "$(controller_post chaos-admin /load '{"ratePerSecond":0}')"
           echo "$load"
-          [ "$load" = '{"ratePerSecond":5}' ] || { echo "expected rate 5"; exit 1; }
+          expect '{"ratePerSecond":5}' "$load"
 
       - name: Chaos controller sets chaos in payment
         run: |
-          curl --silent --fail --output /dev/null \
-            --request POST localhost:8090/services/payment-service/chaos \
-            --header 'Content-Type: application/json' \
-            --data '{"latencyMs":0,"errorRate":1.0}'
+          source "$RUNNER_TEMP/controller.sh"
+          expect 200 "$(controller_post chaos-admin /services/payment-service/chaos '{"latencyMs":0,"errorRate":1.0}')"
           status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
             --request POST localhost:8080/orders \
             --header 'Content-Type: application/json' \
             --data '{"productId":"watch-1","quantity":1,"totalAmount":99.90}')
-          curl --silent --fail --output /dev/null \
-            --request POST localhost:8090/services/payment-service/chaos \
-            --header 'Content-Type: application/json' \
-            --data '{"latencyMs":0,"errorRate":0}'
-          [ "$status" = 502 ] || { echo "expected 502, got $status"; exit 1; }
+          expect 200 "$(controller_post chaos-admin /services/payment-service/chaos '{"latencyMs":0,"errorRate":0}')"
+          expect 502 "$status"
 
       - name: Chaos controller stops and starts inventory
         run: |
-          curl --silent --fail --show-error --request POST localhost:8090/services/inventory-service/stop
-          echo
-          services=$(curl --silent --fail localhost:8090/services)
+          source "$RUNNER_TEMP/controller.sh"
+          expect 200 "$(controller_post chaos-admin /services/inventory-service/stop)"
+          services=$(controller_get /services)
           echo "$services"
           echo "$services" | grep -q '"name":"inventory-service","containerState":"EXITED"' \
             || { echo "expected inventory-service to be EXITED"; exit 1; }
-          curl --silent --fail --show-error --request POST localhost:8090/services/inventory-service/start
-          echo
+          expect 200 "$(controller_post chaos-admin /services/inventory-service/start)"
           curl --silent --fail --retry 30 --retry-delay 2 --retry-all-errors localhost:8081/actuator/health
           echo
           # the shop may still use connections to the stopped container, so the first orders can fail

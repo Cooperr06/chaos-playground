@@ -113,7 +113,7 @@ Authelia setzt sein Cookie mit `SameSite=Lax` (https://www.authelia.com/configur
   - `stop_adminWithoutCsrfToken_returnsForbidden`
   - `updateLoad_viewer_returnsForbidden`
 - `MeControllerTest`: `viewer` liefert `admin` `false`, `admin` liefert `true`, ohne Header `401`.
-- `contextLoads` läuft weiter, `verify` beim Root ist grün, der Smoke-Test der CI (Health-Check auf `8090/actuator/health`) bleibt grün.
+- `contextLoads` läuft weiter, `verify` beim Root ist grün, der Smoke-Test der CI ist grün. Er ruft den Controller direkt auf, ohne Traefik, und schickt `Remote-User` und `Remote-Groups` deshalb selbst mit. `POST`s holen sich vorher per `GET /me` das Cookie `XSRF-TOKEN` und schicken es als `X-XSRF-TOKEN` zurück, wie `app.js`. Ein eigener Schritt prüft im fertigen Container: ohne Header `401`, als `chaos-viewer` `403`, als `chaos-admin` ohne Token `403`.
 
 ## Manuell prüfen
 
