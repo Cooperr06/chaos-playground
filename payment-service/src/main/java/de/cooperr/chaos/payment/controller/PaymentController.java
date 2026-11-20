@@ -21,7 +21,7 @@ public class PaymentController {
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentResponse pay(@Valid @RequestBody PaymentRequest request) {
         PaymentResponse response = new PaymentResponse(UUID.randomUUID(), request.orderId(), PaymentStatus.APPROVED);
-        log.info("Payment approved: orderId={}, paymentId={}", response.orderId(), response.paymentId());
+        log.debug("Payment approved: orderId={}, paymentId={}", response.orderId(), response.paymentId());
         return response;
     }
 }

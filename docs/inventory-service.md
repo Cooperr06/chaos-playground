@@ -25,7 +25,7 @@ Verwaltet den Lagerbestand. Der Shop fragt hier die Verfügbarkeit ab und reserv
    - `quantity` fehlt oder kleiner als 1: `400`
    - Unbekanntes Produkt: `404`
    - Nicht genug Bestand: `409 Conflict`, der Bestand bleibt unverändert
-5. Logging: Pro Reservierung eine Zeile auf INFO mit `productId`, `quantity` und dem neuen Bestand.
+5. Logging: Pro Reservierung eine Zeile auf INFO mit `productId`, `quantity` und dem neuen Bestand. **Später geändert:** nur noch auf DEBUG, ohne Bestand (siehe `docs/shop-service.md`, Punkt 4).
 
 ## Vorgaben zur Umsetzung
 

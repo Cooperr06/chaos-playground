@@ -26,6 +26,7 @@ Nimmt Bestellungen an. Pro Bestellung wird erst im `inventory-service` reservier
    - Nicht genug Bestand (Lager antwortet `409`): `409`. Die Zahlung wird dann nicht aufgerufen.
    - Lager oder Zahlung nicht erreichbar oder antworten mit einem anderen Fehler (z. B. `5xx`): `502 Bad Gateway`, `detail` nennt den betroffenen Dienst.
 4. Logging: Pro Bestellung eine Zeile auf INFO (`orderId`, `productId`, `quantity`, Ergebnis), bei Fehlern eine Zeile auf WARN mit dem betroffenen Dienst.
+   **Später geändert:** Zeilen pro Bestellung (`Order confirmed`, `Payment pending`, `Order failed`) nur noch auf DEBUG. Bei 100 Bestellungen pro Sekunde und mehr lief das Log sonst voll, im Chaos-Fall mit WARN. Auf INFO bleiben nur Zustandswechsel (Breaker, Chaos-Einstellungen, Rate des Lastgenerators). Dasselbe gilt für `Reserved` im Lager und `Payment approved` in der Zahlung. Einzelne Bestellungen sind bei Bedarf über `logging.level` für das Package sichtbar, die Zahlen zeigt das Dashboard.
 
 ## Vorgaben zur Umsetzung
 

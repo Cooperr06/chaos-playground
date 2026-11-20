@@ -34,7 +34,7 @@ public class OrderService {
             UUID reservationId = inventoryClient.reserve(orderRequest.productId(), orderRequest.quantity());
             return pay(orderId, orderRequest, reservationId);
         } catch (DownstreamServiceException e) {
-            log.warn("Order failed: orderId={}, service={}", orderId, e.getService());
+            log.debug("Order failed: orderId={}, service={}", orderId, e.getService());
             throw e;
         }
     }
@@ -50,7 +50,7 @@ public class OrderService {
         try {
             UUID paymentId = paymentClient.pay(orderId, orderRequest.totalAmount());
 
-            log.info("Order confirmed: orderId={}, productId={}, quantity={}",
+            log.debug("Order confirmed: orderId={}, productId={}, quantity={}",
                     orderId, orderRequest.productId(), orderRequest.quantity());
             return new OrderResponse(orderId, orderRequest.productId(), orderRequest.quantity(),
                     reservationId, paymentId, OrderStatus.CONFIRMED);
@@ -58,7 +58,7 @@ public class OrderService {
             if (!resilienceEnabled) {
                 throw e;
             }
-            log.warn("Payment pending: orderId={}, service={}", orderId, e.getService());
+            log.debug("Payment pending: orderId={}, service={}", orderId, e.getService());
             return new OrderResponse(orderId, orderRequest.productId(), orderRequest.quantity(),
                     reservationId, null, OrderStatus.PAYMENT_PENDING);
         }

@@ -36,7 +36,7 @@ public class InventoryService {
         }
 
         Reservation reservation = new Reservation(UUID.randomUUID(), productId, quantity);
-        log.info("Reserved productId={} quantity={}", productId, quantity);
+        log.debug("Reserved productId={} quantity={}", productId, quantity);
         return reservation;
     }
 }

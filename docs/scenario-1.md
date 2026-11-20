@@ -30,7 +30,7 @@ Nach dem Entfernen der Latenz geht der Breaker nach der Wartezeit in HALF_OPEN, 
    - Fehler des Lagers (`404`, `502`, ursprünglich auch `409`, das Lager hat inzwischen keinen Bestand mehr) ändern sich nicht. Szenario 1 betrifft nur die Zahlung.
    - Das Nachholen der Zahlung gibt es nicht wirklich, `PAYMENT_PENDING` ist nur die Antwort an die Kundschaft.
 6. **Actuator:** `management.endpoints.web.exposure.include: health,circuitbreakers`. `GET /actuator/circuitbreakers` zeigt Zustand und Fehlerquote des Breakers. Ohne Resilienz steht der Breaker dort auch, bleibt aber unbenutzt (`CLOSED`, `bufferedCalls` 0).
-7. **Logging:** Zustandswechsel des Breakers auf INFO (`CLOSED -> OPEN` usw.), über `circuitBreaker.getEventPublisher().onStateTransition(...)`. Pro Fallback eine Zeile auf WARN wie bisher bei Fehlern.
+7. **Logging:** Zustandswechsel des Breakers auf INFO (`CLOSED -> OPEN` usw.), über `circuitBreaker.getEventPublisher().onStateTransition(...)`. Pro Fallback eine Zeile auf WARN wie bisher bei Fehlern. **Später geändert:** Pro Fallback nur noch auf DEBUG (siehe `docs/shop-service.md`, Punkt 4), die Zustandswechsel bleiben auf INFO.
 
 ## Vorgaben zur Umsetzung
 
